@@ -1,0 +1,29 @@
+.account-settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.account-settings-grid form{display:flex;flex-direction:column;gap:10px;padding:16px;border:1px solid #dce2e8;border-radius:12px;min-width:0}.account-settings-grid label{display:flex;flex-direction:column;gap:5px}.account-settings-grid input{min-width:0;padding:10px;border:1px solid #aebcc9;border-radius:6px;font:inherit}.account-settings-grid button{padding:12px;background:#1d4ed8;color:white;border:0;border-radius:6px;cursor:pointer}.account-settings-grid button:disabled{opacity:.5}.account-settings-grid .account-withdraw{background:#b91c1c}@media(max-width:700px){.account-settings-grid{grid-template-columns:1fr}}
+
+.mypage-account-button{grid-column:1/-1;width:100%;min-height:46px;margin-top:10px;padding:10px 14px;border:1px solid #bed0ee;border-radius:9px;background:#edf4ff;color:#214b93;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.mypage-account-button i{margin-right:6px}
+.account-dialog{width:min(820px,calc(100% - 32px));max-height:calc(100dvh - 40px);padding:0;border:1px solid #dce3ee;border-radius:18px;background:#fff;color:#243652;box-shadow:0 20px 70px #12233c33;box-sizing:border-box;overflow:auto}
+.account-dialog:not([open]){display:none}
+.account-dialog::backdrop{background:rgba(15,30,50,.5)}
+.account-dialog-shell{padding:24px}
+.account-dialog-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:12px}
+.account-dialog-heading h2{font-size:23px;line-height:1.4;margin:0}
+.account-dialog-close{min-height:42px;min-width:58px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;background:white;color:#41536b;font:inherit;cursor:pointer}
+.account-dialog-intro{font-size:13px;margin:0 0 12px;line-height:1.7}
+.account-verification-note{padding:12px;border-radius:9px;background:#f2f6fb;color:#52637b;font-size:12px;line-height:1.7;margin:0 0 18px}
+.account-dialog .account-settings-grid{gap:14px}
+.account-dialog .account-settings-grid h3{font-size:15px;margin:0 0 4px}
+.account-dialog .account-settings-grid label{font-size:13px}
+.account-dialog .account-settings-grid input{width:100%;box-sizing:border-box;font-size:16px}
+.account-withdraw-section{margin-top:20px;padding-top:16px;border-top:1px solid #e2e8f0}
+.account-withdraw-section summary{cursor:pointer;color:#a32424;font-size:13px;padding:8px 0}
+.account-withdraw-section form{display:grid;gap:10px;padding-top:10px}
+.account-withdraw-section h3{display:none}
+.account-withdraw-section p{margin:0;font-size:12px}
+.account-withdraw-section label{display:grid;gap:6px;font-size:13px}
+.account-withdraw-section input{min-height:42px;padding:8px;border:1px solid #aebcc9;border-radius:6px;font-size:16px;box-sizing:border-box;width:100%}
+.account-withdraw-section button{justify-self:start;min-height:42px;padding:8px 16px;border:0;border-radius:7px;background:#b91c1c;color:#fff;cursor:pointer}
+#accountSettingsMessage{position:sticky;bottom:0;background:white;margin:14px 0 0;padding:8px 0;min-height:20px;font-size:13px;line-height:1.6}
+.account-dialog-open{overflow:hidden}
+.mypage-account-button:focus-visible,.account-dialog button:focus-visible,.account-withdraw-section summary:focus-visible{outline:3px solid #2563eb;outline-offset:3px}
+@media(max-width:700px){.account-dialog{width:calc(100% - 16px);max-height:calc(100dvh - 16px);border-radius:12px}.account-dialog-shell{padding:18px 14px}.account-dialog-heading h2{font-size:20px}.account-dialog .account-settings-grid{grid-template-columns:1fr}.account-dialog .account-settings-grid form{padding:14px}}

@@ -1,0 +1,32 @@
+.finance-details-toggle,.finance-more,.finance-policy-full-terms{display:none}
+.finance-policy-card[hidden],.finance-policy-detail[hidden],.finance-more[hidden]{display:none!important}
+/* 데스크톱에서는 기존 설명·금리·한도·출처 순서를 유지합니다. */
+@media(min-width:701px){.finance-policy-card>div:last-child{display:flex;flex-direction:column}.finance-policy-card .eyebrow{order:0}.finance-policy-card h3{order:1}.finance-policy-detail{display:contents}.finance-policy-description{order:2}.finance-policy-key{order:3}.finance-policy-source-row{order:4}}
+@media(max-width:700px){
+ .finance-policy-card{padding:12px;gap:0;grid-template-columns:minmax(0,1fr)}
+ .finance-policy-icon{display:none}
+ .finance-policy-card>div:last-child{min-width:0}
+ .finance-policy-card h3{font-size:15px;line-height:1.4;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;margin:4px 0 6px}
+ .finance-policy-card.is-expanded h3{display:block;overflow:visible}
+ .finance-policy-card .eyebrow{font-size:10px;line-height:1.4;margin:0}
+ .finance-policy-key{list-style:none;padding:0!important;margin:6px 0!important;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .finance-policy-key li{display:block;min-width:0;padding:0;font-size:12px;line-height:1.4}
+ .finance-policy-key li::before{display:none}
+ .finance-policy-key li strong{display:block;margin-bottom:3px;font-size:10px;color:#68768b}
+ .finance-policy-key li span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+ .finance-details-toggle{display:inline-flex;align-items:center;justify-content:center;margin-top:4px;min-height:40px;padding:6px 12px;font-size:12px;border:1px solid #c6d6ef;border-radius:9px;background:#f0f5ff;color:#214c96;font-weight:700;cursor:pointer}
+ .finance-details-toggle:focus-visible,.finance-more:focus-visible{outline:3px solid #2563eb;outline-offset:3px}
+ .finance-policy-detail{margin-top:10px;padding-top:10px;border-top:1px solid #e0e7f0;font-size:13px;line-height:1.8;overflow-wrap:anywhere}
+ .finance-policy-full-terms{display:block;padding-left:18px}
+ .finance-policy-detail .finance-policy-source-row{display:flex;flex-wrap:wrap;gap:8px}
+ .finance-policy-list{gap:10px}
+ .finance-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .finance-summary-card{min-height:0;padding:12px}
+ .finance-summary-card span{width:22px;height:22px;margin-bottom:8px;font-size:10px}
+ .finance-summary-card h3{font-size:13px;line-height:1.5;margin-bottom:6px}
+ .finance-summary-card p{font-size:12px;line-height:1.6}
+ .finance-check-panel{padding:16px}
+ .finance-check-panel label{padding:8px 0;font-size:12px}
+ .official-link-card{min-height:0;padding:12px 32px 12px 12px}
+ .finance-more{display:block;width:100%;min-height:46px;margin-top:16px;padding:12px;border:1px solid #c6d6ef;border-radius:10px;background:white;color:#214c96;font-weight:700;cursor:pointer}
+}

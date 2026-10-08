@@ -1,0 +1,22 @@
+.admin-main{padding:36px 24px 72px;background:#f3f6fa;min-height:760px}
+.admin-container{width:min(1280px,100%);margin:auto}
+.admin-heading{display:flex;justify-content:space-between;align-items:center;gap:24px;margin-bottom:24px}
+.admin-heading h1{font-size:30px;line-height:1.4;margin:0;color:#18345a}
+.admin-heading p:last-child{line-height:1.7;margin:8px 0 0}
+.admin-account{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:10px 12px;border:1px solid #dfe6ef;border-radius:12px;background:#fff}
+.admin-role{display:inline-flex;align-items:center;gap:7px}
+.admin-quick-nav{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;position:sticky;top:8px;z-index:20;margin:0 0 24px;padding:10px;border:1px solid #dfe6ef;border-radius:14px;background:#fff;box-shadow:0 4px 16px #18345a0a}
+.admin-quick-nav a{display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:8px 10px;border:1px solid transparent;border-radius:10px;font-size:13px;font-weight:700;line-height:1.5;color:#53647b;text-align:center;text-decoration:none;box-sizing:border-box}
+.admin-quick-nav a:hover{background:#f0f5fc;color:#1d4ed8}
+.admin-quick-nav a[aria-current=location]{background:#eaf1ff;border-color:#bfd2fa;color:#1744a0}
+.admin-quick-nav a:focus-visible{outline:3px solid #2563eb;outline-offset:2px}
+.admin-quick-nav i{flex-shrink:0;width:16px;text-align:center}
+#adminCollectionSection{padding:24px;margin-bottom:24px;scroll-margin-top:90px}
+#adminCollectionSection h2{margin:0 0 10px;font-size:21px;line-height:1.5;color:#18345a}
+#adminCollectionSection>p{margin:0 0 18px;max-width:960px;font-size:13px;line-height:1.8;color:#62718a}
+#collectionHistoryTabs{gap:8px;margin:16px 0}
+#collectionHistoryTabs button{font-weight:600;border-radius:9px}
+.admin-panel{background:#fff;border:1px solid #dfe6ef;border-radius:16px}
+.admin-panel[id]{scroll-margin-top:90px}
+@media(max-width:1100px){.admin-quick-nav{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:700px){.admin-main{padding:24px 14px 48px}.admin-heading{align-items:flex-start;flex-direction:column;gap:16px}.admin-heading h1{font-size:25px}.admin-quick-nav{position:static;grid-template-columns:repeat(2,minmax(0,1fr));padding:8px;gap:6px}.admin-quick-nav a{justify-content:flex-start;font-size:12px}#adminCollectionSection{padding:18px}#adminCollectionSection h2{font-size:19px}}
