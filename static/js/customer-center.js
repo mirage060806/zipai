@@ -32,12 +32,6 @@
     window.__customerToast = setTimeout(function () { toast.classList.remove('is-visible'); }, 2400);
   }
 
-  function formatDate(value) {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '날짜 정보 없음';
-    return new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium' }).format(date);
-  }
-
   async function api(path, options) {
     const response = await fetch(path, {
       credentials: 'same-origin',
@@ -70,8 +64,8 @@
       category.textContent = item.category;
       status.textContent = statusLabels[item.status] || item.status;
       title.textContent = item.title;
-      time.dateTime = item.createdAt || '';
-      time.textContent = formatDate(item.createdAt);
+      time.dateTime = item.createdAt;
+      time.textContent = new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium' }).format(new Date(item.createdAt));
       answer.className = 'inquiry-item-answer';
       answer.textContent = item.answer ? '답변: ' + item.answer : '아직 등록된 답변이 없습니다.';
       answer.classList.toggle('is-pending', !item.answer);
@@ -98,7 +92,7 @@
     }
     const button = form.querySelector('[type="submit"]');
     const data = new FormData(form);
-    if (button) button.disabled = true;
+    button.disabled = true;
     try {
       await api('/api/inquiries', {
         method: 'POST',
@@ -116,7 +110,7 @@
     } catch (error) {
       showToast(error.message);
     } finally {
-      if (button) button.disabled = false;
+      button.disabled = false;
     }
   });
 

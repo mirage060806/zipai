@@ -1,31 +1,30 @@
-(function () {
+﻿(function () {
   'use strict';
 
   const STORAGE_KEY = 'zipaiDemoUser';
   const PAGE_PATHS = {
-    'index.html': '/',
-    'finance-policy.html': '/board/finance-policy',
-    'trend1.html': '/board/trend1',
-    'trend2.html': '/board/trend2',
-    'trend3.html': '/board/trend3',
-    'trend4.html': '/board/trend4',
-    'safety.html': '/safe/safety',
-    'happy-housing.html': '/board/happy-housing',
-    'customer-center.html': '/board/customer-center',
-    'community.html': '/board/community',
-    'community-detail.html': '/board/community-detail',
-    'admin.html': '/admin',
-    'login.html': '/member/login',
-    'signup.html': '/member/signup',
-    'social-profile.html': '/member/social-profile',
-    'mypage.html': '/member/mypage',
-    'lifestyle-analysis.html': '/ai/lifestyle-analysis',
-    'sub33.html': '/defense/result',
-    'fraud_result.html': '/defense/result',
-    'checklist.html': '/defense/checklist',
-    'jeonse-calculator.html': '/defense/calculator',
-    'charter-rate-calculator.html': '/defense/calculator',
-    'contract-guide.html': '/defense/guide'
+    'index.html': 'index.html',
+    'finance-policy.html': 'templates/board/finance-policy.html',
+    'trend1.html': 'templates/board/trend1.html',
+    'trend2.html': 'templates/board/trend2.html',
+    'trend3.html': 'templates/board/trend3.html',
+    'trend4.html': 'templates/board/trend4.html',
+    'safety.html': 'templates/safe/safety.html',
+    'happy-housing.html': 'templates/board/happy-housing.html',
+    'customer-center.html': 'templates/board/customer-center.html',
+    'community.html': 'templates/board/community.html',
+    'community-detail.html': 'templates/board/community-detail.html',
+    'admin.html': 'templates/admin/admin.html',
+    'login.html': 'templates/member/login.html',
+    'signup.html': 'templates/member/signup.html',
+    'mypage.html': 'templates/member/mypage.html',
+    'lifestyle-analysis.html': 'templates/ai/lifestyle-analysis.html',
+    'sub33.html': 'templates/defense/fraud_result.html',
+    'fraud_result.html': 'templates/defense/fraud_result.html',
+    'checklist.html': 'templates/defense/checklist.html',
+    'jeonse-calculator.html': 'templates/defense/charter-rate-calculator.html',
+    'charter-rate-calculator.html': 'templates/defense/charter-rate-calculator.html',
+    'contract-guide.html': 'templates/defense/contract-guide.html'
   };
   const PAGE_ALIASES = {
     'sub33.html': 'fraud_result.html',
@@ -51,7 +50,6 @@
     const cleanPath = parts[0].replace(/\\/g, '/').replace(/^(\.\.\/)+/, '').replace(/^\.\//, '').toLowerCase();
     const pageName = getPageName(cleanPath);
     const target = PAGE_PATHS[cleanPath] || PAGE_PATHS[pageName] || parts[0];
-    if (String(target).startsWith('/')) return target + (parts[1] ? '#' + parts[1] : '');
     return getRootPrefix() + target + (parts[1] ? '#' + parts[1] : '');
   }
 
@@ -94,7 +92,7 @@
         ...options
       });
     } catch (error) {
-      throw new Error('인증 서버에 연결할 수 없습니다. Spring Boot가 실행 중인지 확인해 주세요.');
+      throw new Error('인증 서버에 연결할 수 없습니다. node server.js 실행 후 http://127.0.0.1:4173 주소로 접속해 주세요.');
     }
     const contentType = String(response.headers.get('content-type') || '');
     const payload = contentType.includes('application/json')
@@ -102,7 +100,7 @@
       : {};
     if (!response.ok) {
       if (!contentType.includes('application/json')) {
-        throw new Error('현재 접속 주소(' + window.location.origin + ')에는 인증 API가 없습니다. Spring Boot의 /api/auth 경로를 확인해 주세요.');
+        throw new Error('현재 접속 주소(' + window.location.origin + ')에는 인증 API가 없습니다. http://127.0.0.1:4173/templates/member/signup.html 로 접속해 주세요.');
       }
       throw new Error(payload.message || '인증 요청을 처리하지 못했습니다. (HTTP ' + response.status + ')');
     }
@@ -148,6 +146,21 @@
 
   function updateLoginButtons() {
     const user = getUser();
+    document.querySelectorAll('.header-actions').forEach(function (container) {
+      let communityLink = container.querySelector('.community-button');
+      if (!communityLink) {
+        communityLink = document.createElement('a');
+        communityLink.className = 'community-button';
+        communityLink.innerHTML = '<i class="fa-solid fa-pen-to-square" aria-hidden="true"></i><span>게시판</span>';
+        const loginButton = container.querySelector('.login-button');
+        container.insertBefore(communityLink, loginButton || container.firstChild);
+      }
+      communityLink.href = resolvePage('community.html');
+      const active = ['community.html', 'community-detail.html'].includes(getCurrentPage());
+      communityLink.classList.toggle('active', active);
+      if (active) communityLink.setAttribute('aria-current', 'page');
+      else communityLink.removeAttribute('aria-current');
+    });
     document.querySelectorAll('.login-button').forEach(function (button) {
       const icon = document.createElement('i');
       const label = document.createElement('span');
@@ -220,9 +233,8 @@
       logoutButton.setAttribute('aria-hidden', String(!user));
       notificationLink.hidden = !user;
       notificationLink.setAttribute('aria-hidden', String(!user));
-      const isAdmin = Boolean(user && String(user.role || '').toLowerCase() === 'admin');
-      adminLink.hidden = !isAdmin;
-      adminLink.setAttribute('aria-hidden', String(!isAdmin));
+      adminLink.hidden = !user || user.role !== 'admin';
+      adminLink.setAttribute('aria-hidden', String(!user || user.role !== 'admin'));
       if (user) {
         fetch('/api/notifications', { credentials: 'same-origin' })
           .then(function (response) { return response.ok ? response.json() : null; })
@@ -299,78 +311,150 @@
   }
 
   function getCurrentPage() {
-    const pathname = window.location.pathname.replace(/\\/g, '/').replace(/\/+$/, '') || '/';
-    const matched = Object.entries(PAGE_PATHS).find(function (entry) {
-      return entry[1] === pathname;
-    });
-    if (matched) return getPageName(matched[0]);
-    return getPageName(pathname) || 'index.html';
+    return (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
   }
 
-  function headerGroupForPath(pathname) {
-    const path = String(pathname || '/').replace(/\\/g, '/').replace(/\/+$/, '') || '/';
-    if (path === '/' || path === '/index.html') return 'property';
-    if (path.startsWith('/defense/')) return 'defense';
-    if (path.startsWith('/safe/')) return 'safe';
-    if (path === '/board/finance-policy' || /^\/board\/trend[1-4]$/.test(path)) return 'finance';
-    if (path === '/board/happy-housing') return 'happy';
-    if (path === '/ai/lifestyle-analysis' || path === '/ai/lifestyle-analysis.html') return 'lifestyle';
-    return '';
+  function setHeaderActiveLink(activePage) {
+    const header = document.querySelector('.zipai-header');
+    if (!header) return;
+    const targetPage = getPageName(activePage);
+    const currentPage = getCurrentPage();
+    header.querySelectorAll('.menu-links a').forEach(function (link) {
+      const isActive = getPageName(link.getAttribute('href')) === targetPage;
+      link.classList.toggle('active', isActive);
+      if (isActive && targetPage === currentPage) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
   }
 
   function setupHeaderActiveState() {
-    const header = document.querySelector('.zipai-header');
-    if (!header) return;
-    const activeGroup = headerGroupForPath(window.location.pathname);
-
-    header.querySelectorAll('.menu-item').forEach(function (item) {
-      const primary = item.querySelector('.menu-primary');
-      const active = item.dataset.menuGroup === activeGroup;
-      item.classList.toggle('active', active);
-      if (!primary) return;
-      primary.classList.toggle('active', active);
-      if (active) primary.setAttribute('aria-current', 'page');
-      else primary.removeAttribute('aria-current');
-    });
+    const currentPage = getCurrentPage();
+    const fraudPages = ['fraud_result.html', 'charter-rate-calculator.html', 'contract-guide.html', 'checklist.html'];
+    if (fraudPages.includes(currentPage)) {
+      setHeaderActiveLink('fraud_result.html');
+      return;
+    }
+    if (['trend1.html', 'trend2.html', 'trend3.html', 'trend4.html'].includes(currentPage)) {
+      setHeaderActiveLink('trend1.html');
+      return;
+    }
+    const readyPages = ['index.html', 'finance-policy.html', 'safety.html', 'happy-housing.html', 'lifestyle-analysis.html', 'community.html'];
+    setHeaderActiveLink(readyPages.includes(currentPage) ? currentPage : '');
   }
 
   function setupPendingHeaderLinks() {
-    /* 공통 2단 메뉴는 실제 Spring Route만 사용하므로 pending 링크를 만들지 않는다. */
+    const header = document.querySelector('.zipai-header');
+    if (!header) return;
+    const pendingHrefs = ['charter-rate-calculator.html', 'checklist.html'];
+    header.querySelectorAll('.menu-links a').forEach(function (link) {
+      const href = getPageName(link.getAttribute('href'));
+      if (!pendingHrefs.includes(href) || link.dataset.pendingReady === 'true') return;
+      link.dataset.pendingReady = 'true';
+      link.dataset.originalHref = href;
+      link.href = '#';
+      link.setAttribute('aria-disabled', 'true');
+      link.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        setupHeaderActiveState();
+      });
+    });
   }
 
   function setupFraudSubnav() {
-    /* 사기방지 하위 메뉴는 templates/common/header.html의 공통 2단 메뉴로 통합했다. */
-  }
+    const header = document.querySelector('.zipai-header');
+    const fraudLink = header && Array.from(header.querySelectorAll('.menu-links a')).find(function (link) {
+      return getPageName(link.getAttribute('href')) === 'fraud_result.html';
+    });
+    if (!header || !fraudLink || fraudLink.dataset.subnavReady === 'true') return;
 
-  function refreshHeaderUi() {
-    updateLoginButtons();
-    setupPendingHeaderLinks();
-    setupHeaderActiveState();
-    setupFraudSubnav();
-  }
+    const items = [
+      { href: 'fraud_result.html', label: '안전 진단 결과' },
+      { href: 'checklist.html', label: '체크리스트' },
+      { href: 'charter-rate-calculator.html', label: '전세가율 계산' },
+      { href: 'contract-guide.html', label: '계약가이드' }
+    ];
+    const currentPage = getCurrentPage();
+    const fraudPages = items.map(function (item) { return item.href.toLowerCase(); });
+    let subnavWrap = document.querySelector('.subnav-wrap');
+    const hasFraudSubnav = subnavWrap && subnavWrap.querySelector('nav[aria-label="사기방지 메뉴"]');
 
-  function loginDestination() {
-    const raw = new URLSearchParams(location.search).get('returnTo') || sessionStorage.getItem('zipaiLoginReturn') || '/';
-    if (!raw.startsWith('/') || raw.startsWith('//') || /[\\\r\n]/.test(raw)) return '/';
-    const url = new URL(raw, location.origin);
-    if (url.origin !== location.origin || url.pathname.startsWith('/member/login') || url.pathname.startsWith('/oauth2/') || url.pathname.startsWith('/login/')) return '/';
-    return url.pathname + url.search + url.hash;
-  }
+    if (!hasFraudSubnav) {
+      subnavWrap = document.createElement('div');
+      const nav = document.createElement('nav');
+      subnavWrap.className = 'subnav-wrap';
+      nav.className = 'subnav';
+      nav.setAttribute('aria-label', '사기방지 메뉴');
+      items.forEach(function (item) {
+        const link = document.createElement('a');
+        link.href = resolvePage(item.href);
+        link.textContent = item.label;
+        nav.appendChild(link);
+      });
+      subnavWrap.appendChild(nav);
+      header.insertAdjacentElement('afterend', subnavWrap);
+    }
 
-  async function requireMember() {
-    await authReady;
-    await refreshUser();
-    if (getUser()) return true;
-    const target = location.pathname + location.search + location.hash;
-    sessionStorage.setItem('zipaiLoginReturn', target);
-    window.alert('로그인 후 이용할 수 있습니다.');
-    location.href = '/member/login?returnTo=' + encodeURIComponent(target);
-    return false;
+    subnavWrap.classList.add('header-fraud-subnav');
+    subnavWrap.querySelectorAll('.subnav a').forEach(function (link) {
+      const href = getPageName(link.getAttribute('href'));
+      link.classList.toggle('active', href === currentPage);
+    });
+
+    function setFraudSubnavOpen(isOpen) {
+      subnavWrap.classList.toggle('is-open', isOpen);
+      fraudLink.classList.toggle('is-subnav-open', isOpen);
+      fraudLink.setAttribute('aria-expanded', String(isOpen));
+      if (isOpen) setHeaderActiveLink('fraud_result.html');
+      else setupHeaderActiveState();
+    }
+
+    fraudLink.dataset.subnavReady = 'true';
+    fraudLink.setAttribute('aria-haspopup', 'true');
+    let fraudSubnavCloseTimer = 0;
+
+    function openFraudSubnav() {
+      clearTimeout(fraudSubnavCloseTimer);
+      setFraudSubnavOpen(true);
+    }
+
+    function closeFraudSubnav() {
+      clearTimeout(fraudSubnavCloseTimer);
+      setFraudSubnavOpen(false);
+    }
+
+    function scheduleFraudSubnavClose() {
+      clearTimeout(fraudSubnavCloseTimer);
+      fraudSubnavCloseTimer = setTimeout(closeFraudSubnav, 160);
+    }
+
+    setFraudSubnavOpen(false);
+    fraudLink.addEventListener('mouseenter', openFraudSubnav);
+    fraudLink.addEventListener('focus', openFraudSubnav);
+    fraudLink.addEventListener('mouseleave', scheduleFraudSubnavClose);
+    subnavWrap.addEventListener('mouseenter', openFraudSubnav);
+    subnavWrap.addEventListener('mouseleave', scheduleFraudSubnavClose);
+    subnavWrap.addEventListener('focusin', openFraudSubnav);
+    subnavWrap.addEventListener('focusout', function () {
+      setTimeout(function () {
+        if (!subnavWrap.contains(document.activeElement) && document.activeElement !== fraudLink) {
+          scheduleFraudSubnavClose();
+        }
+      }, 0);
+    });
+    header.querySelectorAll('.menu-links a').forEach(function (link) {
+      if (link === fraudLink) return;
+      link.addEventListener('mouseenter', scheduleFraudSubnavClose);
+      link.addEventListener('focus', scheduleFraudSubnavClose);
+    });
+    fraudLink.addEventListener('click', function (event) {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
+      openFraudSubnav();
+    });
   }
 
   window.ZipaiAuth = {
-    requireMember: requireMember,
-    loginDestination: loginDestination,
     getUser: getUser,
     login: login,
     signup: signup,
@@ -378,37 +462,18 @@
     refreshUser: refreshUser,
     get ready() { return authReady; },
     updateLoginButtons: updateLoginButtons,
-    refreshHeaderUi: refreshHeaderUi,
     resolvePage: resolvePage
   };
 
-  function renderDemoBanner() {
-    const user = getUser();
-    if (!user || !user.demo || document.getElementById('zipaiDemoBanner')) return;
-    const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/static/css/native-demo.css?v=20261007-native1'; document.head.appendChild(css);
-    const banner = document.createElement('aside'); banner.id = 'zipaiDemoBanner'; banner.setAttribute('aria-label', '체험 모드');
-    const label = document.createElement('strong'); label.textContent = user.demoMode === 'admin' ? '관리자 체험 중' : '일반 사용자 체험 중';
-    const help = document.createElement('span'); help.textContent = '변경 사항은 이 방문자의 데모 데이터에만 적용됩니다.';
-    const switchMode = document.createElement('a'); switchMode.href = '/demo/start?mode=' + (user.demoMode === 'admin' ? 'user' : 'admin'); switchMode.textContent = user.demoMode === 'admin' ? '일반 사용자로 전환' : '관리자로 전환';
-    const end = document.createElement('a'); end.href = '/demo/end'; end.textContent = '체험 종료';
-    banner.append(label, help, switchMode, end); document.body.prepend(banner);
-  }
-
   function initAuthUi() {
-    renderDemoBanner();
     setupListingAccess();
-    refreshHeaderUi();
+    updateLoginButtons();
+    setupPendingHeaderLinks();
+    setupHeaderActiveState();
+    setupFraudSubnav();
   }
 
   authReady = refreshUser();
-  authReady.then(function () {
-    if (document.readyState !== 'loading') renderDemoBanner();
-    if (getUser() && location.pathname === '/' && sessionStorage.getItem('zipaiLoginReturn')) {
-      const destination = loginDestination();
-      sessionStorage.removeItem('zipaiLoginReturn');
-      if (destination !== '/') location.replace(destination);
-    }
-  });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initAuthUi);
   else initAuthUi();
 })();

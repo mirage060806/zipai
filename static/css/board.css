@@ -191,24 +191,6 @@ button { color: inherit; }
   body { font-size: 14px; }.content-width { width: min(100% - 28px,1160px); }.site-header { height: 62px; }.header-inner { width: calc(100% - 24px); }.brand { min-width: auto; margin-right: auto; }.main-nav, .icon-button, .login-button { display: none; }.subnav-wrap { top: 62px; overflow-x: auto; }.subnav { width: 620px; height: 48px; margin: 0; }.subnav a::after { right: 18px; left: 18px; }.section { padding: 64px 0; }.hero, .hero-content { min-height: auto; }.hero-content { display: block; padding-top: 60px; }.hero h1, .page-hero h1 { font-size: 35px; }.hero-visual { height: 360px; transform: scale(.85); transform-origin: center top; }.hero-description { font-size: 15px; }.desktop-only { display: none; }.split-heading { display: block; }.saved-at { margin: 5px 0 0; }.score-card { display: block; padding: 30px; text-align: center; }.score-ring { margin: 0 auto 25px; }.summary-card { padding: 26px; }.risk-item { grid-template-columns: 36px 1fr; }.risk-item a { grid-column: 2; }.tool-grid { grid-template-columns: 1fr; }.page-hero { padding: 38px 0 50px; }.breadcrumb { margin-bottom: 25px !important; }.sticky-progress { top: 119px; padding: 20px 18px 0; }.step-tabs { margin-right: -18px; margin-left: -18px; }.answer-options { padding-left: 0; }.question-card { padding: 22px 18px; }.form-navigation .button { min-width: 120px; }.calculator-grid, .result-column { grid-template-columns: 1fr; }.calculator-form, .ratio-result { padding: 26px 20px; }.guide-layout { grid-template-columns: 1fr; }.guide-sidebar { position: static; padding: 20px; }.guide-sidebar h2, .guide-sidebar > .eyebrow { display: none; }.guide-sidebar nav { display: flex; overflow-x: auto; }.guide-sidebar nav button { min-width: 145px; }.guide-completion { margin: 18px -20px -20px; }.guide-panel { padding: 26px 18px; }.guide-panel-heading { gap: 13px; }.large-step { font-size: 40px; }.accordion > button { padding: 17px 13px; }.accordion button small { display: none; }.accordion.open .accordion-content { padding: 18px 20px; }.special-clause p { padding: 0 0 35px; }.emergency-box { display: block; padding: 30px 24px; }.emergency-box .button { margin-top: 22px; }.footer-inner { grid-template-columns: 1fr; }.footer-links { margin-top: 28px; }.copyright { margin-top: 25px; }.modal { padding: 34px 22px 24px; }.modal-actions { display: grid; }
 }
 
-.finance-policy-filters { display: grid; margin-bottom: 20px; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
-.finance-policy-filters label { display: grid; padding: 0; border: 0; gap: 6px; color: var(--navy); font-size: 12px; font-weight: 800; }
-.finance-policy-filters select { width: 100%; height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; color: var(--text); background: var(--white); }
-.finance-policy-empty { display: grid; min-height: 220px; padding: 30px; place-items: center; align-content: center; gap: 9px; text-align: center; box-shadow: none; }
-.finance-policy-empty i { display: grid; width: 48px; height: 48px; border-radius: 50%; color: var(--blue); background: var(--blue-light); place-items: center; }
-.finance-policy-empty strong { color: var(--navy); font-size: 17px; }
-.finance-policy-empty p { margin: 0; color: var(--muted); font-size: 13px; }
-.finance-policy-empty.is-error i { color: #c23f3f; background: #fff0f0; }
-.finance-policy-card li strong { color: var(--navy); }
-.finance-policy-source-row { display: flex; margin-top: 17px; align-items: center; flex-wrap: wrap; gap: 9px; }
-.finance-policy-source { color: var(--blue); font-size: 12px; font-weight: 800; }
-.finance-policy-source.is-muted, .finance-policy-source-row small { color: var(--muted); font-weight: 500; }
-.finance-policy-review { padding: 4px 8px; border-radius: 10px; color: #9a6500; background: #fff4d6; font-size: 10px; font-weight: 800; }
-
-@media (max-width: 520px) {
-  .finance-policy-filters { grid-template-columns: 1fr; }
-}
-
 @media (max-width: 420px) {
   .subnav { width: 560px; }.subnav a { font-size: 12px; }.hero h1, .page-hero h1 { font-size: 31px; }.hero-visual { margin-left: -30px; }.answer-options { grid-template-columns: 1fr; }.answer-options span { height: 38px; }.step-tabs button { font-size: 11px; }.step-heading { display: block; }.step-heading > span { display: inline-block; margin-bottom: 10px; }.ratio-number strong { font-size: 58px; }.guide-panel-heading { align-items: flex-start; }.large-step { display: none; }.footer-links { gap: 14px; font-size: 11px; }
 }

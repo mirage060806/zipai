@@ -76,54 +76,16 @@
   ].map(function (property) {
     return Object.assign({ source:'등록 예시', verifiedAt:'시연 데이터 · 실제 계약 불가' }, property);
   });
-  let generalProperties = [];
+  let generalProperties = sampleProperties.concat(additionalProperties, getRegisteredProperties()).filter(isGyeonggiProperty);
   let publicProperties = [];
-  let marketTransactions = [];
   let properties = generalProperties;
   let publicLoading = false;
   let publicLoadError = '';
   let publicApiConnected = false;
-  let generalLoading = true;
-  let generalLoadError = '';
-  let marketLoading = false;
-  let marketLoadError = '';
-  let marketPage = 0;
-  let marketTotalCount = 0;
-  let marketTotalPages = 0;
-  const marketPageSize = 30;
-  const marketRegions = [
-    ['seoul','11110','종로구'],['seoul','11140','중구'],['seoul','11170','용산구'],['seoul','11200','성동구'],['seoul','11215','광진구'],['seoul','11230','동대문구'],['seoul','11260','중랑구'],['seoul','11290','성북구'],['seoul','11305','강북구'],['seoul','11320','도봉구'],['seoul','11350','노원구'],['seoul','11380','은평구'],['seoul','11410','서대문구'],['seoul','11440','마포구'],['seoul','11470','양천구'],['seoul','11500','강서구'],['seoul','11530','구로구'],['seoul','11545','금천구'],['seoul','11560','영등포구'],['seoul','11590','동작구'],['seoul','11620','관악구'],['seoul','11650','서초구'],['seoul','11680','강남구'],['seoul','11710','송파구'],['seoul','11740','강동구'],
-    ['gyeonggi','41111','수원시 장안구'],['gyeonggi','41113','수원시 권선구'],['gyeonggi','41115','수원시 팔달구'],['gyeonggi','41117','수원시 영통구'],['gyeonggi','41131','성남시 수정구'],['gyeonggi','41133','성남시 중원구'],['gyeonggi','41135','성남시 분당구'],['gyeonggi','41150','의정부시'],['gyeonggi','41171','안양시 만안구'],['gyeonggi','41173','안양시 동안구'],['gyeonggi','41192','부천시 원미구'],['gyeonggi','41194','부천시 소사구'],['gyeonggi','41196','부천시 오정구'],['gyeonggi','41210','광명시'],['gyeonggi','41220','평택시'],['gyeonggi','41250','동두천시'],['gyeonggi','41271','안산시 상록구'],['gyeonggi','41273','안산시 단원구'],['gyeonggi','41281','고양시 덕양구'],['gyeonggi','41285','고양시 일산동구'],['gyeonggi','41287','고양시 일산서구'],['gyeonggi','41290','과천시'],['gyeonggi','41310','구리시'],['gyeonggi','41360','남양주시'],['gyeonggi','41370','오산시'],['gyeonggi','41390','시흥시'],['gyeonggi','41410','군포시'],['gyeonggi','41430','의왕시'],['gyeonggi','41450','하남시'],['gyeonggi','41461','용인시 처인구'],['gyeonggi','41463','용인시 기흥구'],['gyeonggi','41465','용인시 수지구'],['gyeonggi','41480','파주시'],['gyeonggi','41500','이천시'],['gyeonggi','41550','안성시'],['gyeonggi','41570','김포시'],['gyeonggi','41591','화성시 만세구'],['gyeonggi','41593','화성시 효행구'],['gyeonggi','41595','화성시 병점구'],['gyeonggi','41597','화성시 동탄구'],['gyeonggi','41610','광주시'],['gyeonggi','41630','양주시'],['gyeonggi','41650','포천시'],['gyeonggi','41670','여주시'],['gyeonggi','41800','연천군'],['gyeonggi','41820','가평군'],['gyeonggi','41830','양평군']
-  ];
-  const marketRegionFallbackCenters = {
-    '11110':[37.5735,126.9790],'11140':[37.5641,126.9979],'11170':[37.5326,126.9905],'11200':[37.5633,127.0371],'11215':[37.5385,127.0823],
-    '11230':[37.5744,127.0396],'11260':[37.6063,127.0927],'11290':[37.5894,127.0167],'11305':[37.6396,127.0257],'11320':[37.6688,127.0471],
-    '11350':[37.6542,127.0568],'11380':[37.6027,126.9291],'11410':[37.5791,126.9368],'11440':[37.5663,126.9019],'11470':[37.5169,126.8664],
-    '11500':[37.5509,126.8495],'11530':[37.4955,126.8877],'11545':[37.4569,126.8955],'11560':[37.5264,126.8963],'11590':[37.5124,126.9393],
-    '11620':[37.4784,126.9516],'11650':[37.4837,127.0324],'11680':[37.5172,127.0473],'11710':[37.5145,127.1059],'11740':[37.5301,127.1238],
-    '41111':[37.3040,127.0100],'41113':[37.2577,126.9718],'41115':[37.2826,127.0199],'41117':[37.2596,127.0464],
-    '41131':[37.4504,127.1459],'41133':[37.4305,127.1373],'41135':[37.3825,127.1189],'41150':[37.7381,127.0337],
-    '41171':[37.3865,126.9327],'41173':[37.3943,126.9568],'41192':[37.4980,126.7870],'41194':[37.4800,126.7990],'41196':[37.5280,126.7960],
-    '41210':[37.4786,126.8644],'41220':[36.9921,127.1128],'41250':[37.9034,127.0605],'41271':[37.3010,126.8460],'41273':[37.3190,126.8150],
-    '41281':[37.6370,126.8320],'41285':[37.6590,126.7730],'41287':[37.6750,126.7500],'41290':[37.4292,126.9876],
-    '41310':[37.5943,127.1296],'41360':[37.6360,127.2165],'41370':[37.1498,127.0772],'41390':[37.3800,126.8029],
-    '41410':[37.3617,126.9352],'41430':[37.3448,126.9683],'41450':[37.5393,127.2148],'41461':[37.2342,127.2010],
-    '41463':[37.2804,127.1152],'41465':[37.3222,127.0970],'41480':[37.7599,126.7800],'41500':[37.2720,127.4350],
-    '41550':[37.0080,127.2797],'41570':[37.6152,126.7156],'41591':[37.1995,126.8312],'41593':[37.2190,126.9500],
-    '41595':[37.2070,127.0340],'41597':[37.2000,127.0730],'41610':[37.4295,127.2550],'41630':[37.7853,127.0458],
-    '41650':[37.8949,127.2002],'41670':[37.2982,127.6372],'41800':[38.0964,127.0748],'41820':[37.8315,127.5096],'41830':[37.4917,127.4876]
-  };
-  const sidoMapCenters = {
-    all:[36.5,127.8,8], seoul:[37.5665,126.9780,10], gyeonggi:[37.4138,127.5183,9],
-    '부산광역시':[35.1796,129.0756,10], '대구광역시':[35.8714,128.6014,10], '인천광역시':[37.4563,126.7052,10],
-    '광주광역시':[35.1595,126.8526,10], '대전광역시':[36.3504,127.3845,10], '울산광역시':[35.5384,129.3114,10],
-    '세종특별자치시':[36.4800,127.2890,11], '강원특별자치도':[37.8228,128.1555,8], '충청북도':[36.6357,127.4917,9],
-    '충청남도':[36.6588,126.6728,9], '전북특별자치도':[35.8203,127.1088,9], '전라남도':[34.8161,126.4629,8],
-    '경상북도':[36.4919,128.8889,8], '경상남도':[35.4606,128.2132,8], '제주특별자치도':[33.4890,126.4983,9]
-  };
-  let listingRegionFocusSequence = 0;
-  const state = { category: 'recommended', deal: 'all', room: 'all', query: '', sido: 'all', region: '', maxPrice: null, minArea: null, maxArea: null, maxMonthly: 150, maxDeposit: 30000, parking: false, elevator: false, pet: false, includeStudy: true, safeOnly: false, favoritesOnly: false, sort: 'recommended', selected: null, bounds: null };
-  let favorites = [];
+  let adminExcelLoaded = false;
+
+  const state = { category: 'general', deal: 'all', room: 'all', query: '', maxMonthly: 150, maxDeposit: 30000, parking: false, elevator: false, pet: false, safeOnly: false, favoritesOnly: false, sort: 'recommended', selected: null, bounds: null };
+  let favorites = getStoredFavorites();
   let displayedProperties = properties.slice();
   let propertyMap = null;
   let currentLocationMarker = null;
@@ -132,9 +94,6 @@
   const propertyMarkers = new Map();
   const aggregateMarkers = new Map();
   const amenityMarkers = new Map();
-  const marketMarkers = new Map();
-  const marketRegionCenters = new Map();
-  let marketBounds = null;
   const amenityMinZoom = 17;
   const amenityPlaces = [
     { id:'mart-yatap', category:'mart', icon:'🛒', name:'야탑 생활 할인마트', address:'성남시 분당구 야탑동', lat:37.4114, lng:127.1287 },
@@ -174,53 +133,44 @@
     } catch (error) { return []; }
   }
 
-  function isSupportedProperty(property) {
-    if (!property) return false;
-    const address = String(property.address || '').trim();
-    const sido = String(property.sido || '').trim();
-    const regionMatches = sido === '경기도' || sido === '서울특별시' || address.indexOf('경기도 ') === 0 || address.indexOf('서울특별시 ') === 0 || address.indexOf('서울시 ') === 0 || /^(수원시|성남시|고양시|용인시|부천시|안산시|안양시|남양주시|화성시|평택시|의정부시|시흥시|파주시|김포시|광명시|광주시|군포시|이천시|오산시|하남시|양주시|구리시|안성시|포천시|의왕시|여주시|동두천시|과천시|가평군|양평군|연천군)\b/.test(address);
-    const lat = Number(property.lat);
-    const lng = Number(property.lng);
-    const coordsMissing = !Number.isFinite(lat) || !Number.isFinite(lng) || (lat === 0 && lng === 0);
-    const coordsInServiceArea = lat >= 36.82 && lat <= 38.32 && lng >= 126.30 && lng <= 127.86;
-    return regionMatches && (coordsMissing || coordsInServiceArea);
+  function isGyeonggiProperty(property) {
+    return property && String(property.address || '').indexOf('경기도 ') === 0 &&
+      Number(property.lat) >= 36.82 && Number(property.lat) <= 38.32 &&
+      Number(property.lng) >= 126.30 && Number(property.lng) <= 127.86;
   }
 
-  const sidoAliases = [
-    ['seoul', ['서울특별시','서울시','서울']], ['gyeonggi', ['경기도','경기']],
-    ['부산광역시', ['부산광역시','부산']], ['대구광역시', ['대구광역시','대구']], ['인천광역시', ['인천광역시','인천']],
-    ['광주광역시', ['광주광역시','광주']], ['대전광역시', ['대전광역시','대전']], ['울산광역시', ['울산광역시','울산']],
-    ['세종특별자치시', ['세종특별자치시','세종시','세종']], ['강원특별자치도', ['강원특별자치도','강원도','강원']],
-    ['충청북도', ['충청북도','충북']], ['충청남도', ['충청남도','충남']], ['전북특별자치도', ['전북특별자치도','전라북도','전북']],
-    ['전라남도', ['전라남도','전남']], ['경상북도', ['경상북도','경북']], ['경상남도', ['경상남도','경남']],
-    ['제주특별자치도', ['제주특별자치도','제주도','제주']]
-  ];
-
-  function propertySidoKey(property) {
-    const target = [property && property.sido, property && property.address, property && property.title].filter(Boolean).join(' ');
-    const found = sidoAliases.find(function (entry) { return entry[1].some(function (name) { return target.includes(name); }); });
-    return found ? found[0] : '';
-  }
-
-  function extractInterestRegion(text) {
-    let target = String(text || '').trim();
-    sidoAliases.forEach(function (entry) { entry[1].forEach(function (name) { target = target.replace(name, ' '); }); });
-    const tokens = target.split(/\s+/).filter(Boolean);
-    for (let index = 0; index < tokens.length; index += 1) {
-      if (/시$/.test(tokens[index]) && tokens[index + 1] && /구$/.test(tokens[index + 1])) return tokens[index] + ' ' + tokens[index + 1];
-      if (/(시|군|구)$/.test(tokens[index])) return tokens[index];
-    }
-    return '';
-  }
-
-  function hasMapCoordinates(property) {
-    if (!property) return false;
-    const lat = Number(property.lat);
-    const lng = Number(property.lng);
-    return Number.isFinite(lat) && Number.isFinite(lng) && !(lat === 0 && lng === 0);
+  function getStoredFavorites() {
+    try {
+      const data = JSON.parse(localStorage.getItem('zipdosoFavorites') || '[]');
+      return Array.isArray(data) ? data.map(Number) : [];
+    } catch (error) { return []; }
   }
 
   function saveFavorites(syncServer) {
+    try { localStorage.setItem('zipdosoFavorites', JSON.stringify(favorites)); } catch (error) { /* local file privacy mode */ }
+    try {
+      const previous = JSON.parse(localStorage.getItem('zipaiFavoriteProperties') || '[]');
+      const previousById = new Map((Array.isArray(previous) ? previous : []).map(function (property) {
+        return [Number(property.id), property];
+      }));
+      const favoriteProperties = favorites.map(function (id) {
+        const property = generalProperties.find(function (item) { return Number(item.id) === Number(id); }) ||
+          properties.find(function (item) { return Number(item.id) === Number(id); }) ||
+          previousById.get(Number(id));
+        if (!property || property.source === 'LH 공공데이터') return null;
+        return {
+          id: property.id,
+          title: property.title,
+          address: property.address,
+          deal: property.deal,
+          type: property.type,
+          deposit: Number(property.deposit || 0),
+          monthly: Number(property.monthly || 0),
+          maintenance: Number(property.maintenance || 0)
+        };
+      }).filter(Boolean);
+      localStorage.setItem('zipaiFavoriteProperties', JSON.stringify(favoriteProperties));
+    } catch (error) { /* local file privacy mode */ }
     const favoriteCount = document.getElementById('favoriteCount');
     if (favoriteCount) favoriteCount.textContent = favorites.length;
     if (syncServer && window.ZipaiAuth && window.ZipaiAuth.getUser()) {
@@ -241,27 +191,11 @@
       const response = await fetch('/api/favorites', { credentials: 'same-origin' });
       if (!response.ok) return;
       const payload = await response.json();
-      favorites = Array.isArray(payload.ids) ? payload.ids.map(Number) : [];
+      if (Array.isArray(payload.ids) && payload.ids.length) favorites = payload.ids.map(Number);
+      else if (favorites.length) saveFavorites(true);
       saveFavorites(false);
       render();
-    } catch (error) { showToast('찜 목록을 불러오지 못했습니다.'); }
-  }
-
-  async function initializePersonalViews() {
-    const bar = document.getElementById('personalViewBar');
-    if (!window.ZipaiAuth) { bar.hidden = true; return; }
-    try { await window.ZipaiAuth.ready; } catch (error) { bar.hidden = true; return; }
-    const loggedIn = Boolean(window.ZipaiAuth.getUser());
-    bar.hidden = !loggedIn;
-    if (!loggedIn) {
-      favorites = [];
-      saveFavorites(false);
-      render();
-      return;
-    }
-    await loadServerFavorites();
-    if (window.location.hash === '#saved-homes') switchPersonalView('favorites');
-    else switchPersonalView('recommended');
+    } catch (error) { /* 로컬 찜 목록을 유지합니다. */ }
   }
 
   function money(value) {
@@ -274,46 +208,29 @@
   }
 
   function priceText(property) {
-    if (property.source === 'LH청약플러스 수집') return '모집공고 확인';
-    if (property.deal === 'sale') return money(Number(property.salePrice || 0));
+    if (property.source === 'LH 공공데이터') return '모집공고 확인';
     return property.deal === 'jeonse' ? money(property.deposit) : money(property.deposit) + '/' + property.monthly;
   }
 
   function dealLabel(property) {
-    if (property.source === 'LH청약플러스 수집') return '공공임대';
-    if (property.deal === 'sale') return '매매';
+    if (property.source === 'LH 공공데이터') return '공공임대';
     return property.deal === 'jeonse' ? '전세' : '월세';
-  }
-
-  function maintenanceText(value) {
-    const amount = Number(value || 0);
-    return amount ? amount.toLocaleString('ko-KR') + '만원' : '없음';
   }
 
   function filteredWith(options) {
     const config = Object.assign({}, state, options || {});
     const query = config.query.trim().toLowerCase();
     let result = properties.filter(function (property) {
-      const buildingType = String(property.buildingType || property.type || '').toLowerCase();
-      const apartment = buildingType.includes('아파트') || buildingType === 'apartment';
-      if (!config.includeStudy && property.studyData) return false;
-      if (state.category === 'general' && !apartment) return false;
-      if (state.category === 'house' && apartment) return false;
-      if (state.category !== 'public' && config.deal !== 'all' && property.deal !== config.deal) return false;
-      if (state.category !== 'public' && config.room !== 'all' && property.type !== config.room) return false;
-      const regionTarget = [property.sido, property.sigungu, property.district, property.address, property.title].filter(Boolean).join(' ');
-      if (config.sido !== 'all' && propertySidoKey(property) !== config.sido) return false;
-      if (config.region && !regionTarget.includes(config.region)) return false;
-      const propertyPrice = property.deal === 'sale' ? Number(property.salePrice || 0) : (property.deal === 'monthly' ? Number(property.monthly || 0) : Number(property.deposit || 0));
-      if (config.maxPrice != null && propertyPrice > config.maxPrice) return false;
-      if (config.minArea != null && Number(property.area || 0) < config.minArea) return false;
-      if (config.maxArea != null && Number(property.area || 0) > config.maxArea) return false;
+      if (config.deal !== 'all' && property.deal !== config.deal) return false;
+      if (config.room !== 'all' && property.type !== config.room) return false;
+      if (property.deal === 'monthly' && property.monthly > config.maxMonthly) return false;
+      if (property.deposit > config.maxDeposit) return false;
       if (config.parking && !property.parking) return false;
       if (config.elevator && !property.elevator) return false;
       if (config.pet && !property.pet) return false;
       if (config.safeOnly && property.safe < 85) return false;
       if (config.favoritesOnly && !favorites.includes(property.id)) return false;
-      if (config.bounds && hasMapCoordinates(property) && !config.bounds.contains([property.lat, property.lng])) return false;
+      if (config.bounds && !config.bounds.contains([property.lat, property.lng])) return false;
       if (query) {
         const target = [property.title, property.type, property.address, property.walk].concat(property.tags).join(' ').toLowerCase();
         if (!target.includes(query)) return false;
@@ -332,181 +249,28 @@
 
   function propertyCard(property) {
     const liked = favorites.includes(property.id);
-    const official = property.source === 'LH청약플러스 수집';
+    const official = property.source === 'LH 공공데이터';
     if (official) {
       return '<article class="property-card' + (state.selected === property.id ? ' active' : '') + '" data-id="' + property.id + '" tabindex="0">' +
         propertyPhoto(property, true, false) +
         '<div class="property-info"><p class="property-type">' + escapeHtml(property.type) + ' · ' + escapeHtml(property.status || '공고중') + '</p>' +
         '<p class="property-price"><span class="deal-badge monthly">공공임대</span>모집공고 확인</p>' +
         '<p class="property-address">' + escapeHtml(property.address) + '</p><p class="property-tags">' + property.tags.map(function (tag) { return '<span>#' + escapeHtml(tag) + '</span>'; }).join('') + '</p>' +
-        '<span class="data-source-badge official">LH청약플러스 수집 · ' + escapeHtml(property.verifiedAt) + '</span></div></article>';
+        '<span class="data-source-badge official">LH 공공데이터 · ' + escapeHtml(property.verifiedAt) + '</span></div></article>';
     }
     return '<article class="property-card' + (state.selected === property.id ? ' active' : '') + '" data-id="' + property.id + '" tabindex="0">' +
       propertyPhoto(property, false, false) +
-      '<div class="property-info"><p class="property-type">' + property.type + ' · ' + property.walk + '</p><p class="property-price"><span class="deal-badge ' + property.deal + '">' + dealLabel(property) + '</span>' + priceText(property) + '</p><p class="property-meta">관리비 ' + maintenanceText(property.maintenance) + ' · ' + property.area + '㎡ · ' + property.floor + '</p><p class="property-address">' + property.address + '</p><p class="property-tags">' + property.tags.map(function (tag) { return '<span>#' + tag + '</span>'; }).join('') + '</p>' +
+      '<div class="property-info"><p class="property-type">' + property.type + ' · ' + property.walk + '</p><p class="property-price"><span class="deal-badge ' + property.deal + '">' + dealLabel(property) + '</span>' + priceText(property) + '</p><p class="property-meta">관리비 ' + (property.maintenance ? property.maintenance + '만' : '없음') + ' · ' + property.area + '㎡ · ' + property.floor + '</p><p class="property-address">' + property.address + '</p><p class="property-tags">' + property.tags.map(function (tag) { return '<span>#' + tag + '</span>'; }).join('') + '</p>' +
       '<span class="data-source-badge">' + escapeHtml(property.source || '등록 매물') + ' · ' + escapeHtml(property.verifiedAt || '확인일 미입력') + '</span></div>' +
       '<button type="button" class="favorite-button' + (liked ? ' active' : '') + '" data-favorite="' + property.id + '" aria-label="찜하기">' + (liked ? '♥' : '♡') + '</button></article>';
   }
 
-  function marketTransactionCard(transaction) {
-    const cancelled = isCancelledTransaction(transaction);
-    const amount = transaction.dealAmount == null ? '가격 미입력' : money(Number(transaction.dealAmount)) + '만원';
-    const address = [transaction.neighborhood, transaction.jibun].filter(Boolean).join(' ');
-    const detail = [transaction.area ? Number(transaction.area).toLocaleString('ko-KR') + '㎡' : '', transaction.floor ? transaction.floor + '층' : '', transaction.buildYear ? transaction.buildYear + '년 준공' : ''].filter(Boolean).join(' · ');
-    return '<article class="market-transaction-card' + (cancelled ? ' cancelled' : '') + '" data-market-id="' + transaction.transactionId + '" tabindex="0">' +
-      '<div class="market-transaction-head"><div><span class="market-source">국토교통부 실거래가</span>' + (cancelled ? '<span class="cancel-badge">계약 취소</span>' : '') + '<h2>' + escapeHtml(transaction.aptName || '아파트명 미입력') + '</h2></div><strong>' + escapeHtml(amount) + '</strong></div>' +
-      '<p class="market-address">' + escapeHtml(address || '주소 정보 없음') + '</p>' +
-      '<p class="market-meta">' + escapeHtml(detail || '상세 정보 없음') + '</p>' +
-      '<div class="market-transaction-foot"><span>' + escapeHtml(transaction.dealDate || transaction.dealYmd || '거래일 미입력') + '</span><span>' + escapeHtml(transaction.dealingType || '거래유형 미입력') + '</span></div>' +
-      '</article>';
-  }
-
-  function isCancelledTransaction(transaction) {
-    const value = String(transaction.cancelDealYn || '').trim().toUpperCase();
-    return value !== '' && value !== 'N';
-  }
-
-  async function openMarketDetail(transactionId) {
-    const modal = document.getElementById('marketDetailModal');
-    const content = document.getElementById('marketDetailContent');
-    content.innerHTML = '<div class="list-loading"><i></i><span>상세 정보를 불러오고 있어요</span></div>';
-    openSheet(modal);
-    try {
-      const response = await fetch('/api/properties/market-transactions/' + transactionId, { credentials: 'same-origin' });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.message || '상세 정보를 불러오지 못했습니다.');
-      const item = payload.item || {};
-      const cancelled = isCancelledTransaction(item);
-      const rows = Array.isArray(payload.comparable) ? payload.comparable : [];
-      content.innerHTML = '<header><span class="market-source">국토교통부 실거래가</span>' + (cancelled ? '<span class="cancel-badge">계약 취소</span>' : '') +
-        '<h2 id="marketDetailTitle">' + escapeHtml(item.aptName || '아파트명 미입력') + '</h2><strong>' + (item.dealAmount == null ? '가격 미입력' : money(Number(item.dealAmount)) + '만원') + '</strong></header>' +
-        '<dl class="market-detail-grid"><div><dt>거래일</dt><dd>' + escapeHtml(item.dealDate || '-') + '</dd></div><div><dt>전용면적</dt><dd>' + escapeHtml(item.area == null ? '-' : item.area + '㎡') + '</dd></div><div><dt>층</dt><dd>' + escapeHtml(item.floor || '-') + '</dd></div><div><dt>건축연도</dt><dd>' + escapeHtml(item.buildYear || '-') + '</dd></div><div><dt>거래유형</dt><dd>' + escapeHtml(item.dealingType || '-') + '</dd></div><div><dt>주소</dt><dd>' + escapeHtml([item.neighborhood,item.jibun].filter(Boolean).join(' ') || '-') + '</dd></div></dl>' +
-        '<section class="market-comparison"><h3>같은 동·면적 ±10㎡ 최근 거래</h3>' + (rows.length ? rows.map(function (row) { return '<div><span>' + escapeHtml(row.aptName || '-') + ' · ' + escapeHtml(row.area + '㎡') + '</span><strong>' + money(Number(row.dealAmount || 0)) + '만원</strong><small>' + escapeHtml(row.dealDate || '-') + '</small></div>'; }).join('') : '<p>비교 가능한 최근 거래가 없습니다.</p>') + '</section>';
-    } catch (error) {
-      content.innerHTML = '<div class="empty-list"><span>!</span><h2>상세 정보를 불러오지 못했어요</h2><p>' + escapeHtml(error.message) + '</p></div>';
-    }
-  }
-
-  function filteredMarketTransactions() {
-    return marketTransactions.slice();
-  }
-
-  function renderMarketPagination() {
-    const pagination = document.getElementById('marketPagination');
-    if (state.category !== 'market' || marketTotalPages <= 1) {
-      pagination.hidden = true;
-      pagination.innerHTML = '';
-      return;
-    }
-    const start = Math.max(0, Math.min(marketPage - 2, marketTotalPages - 5));
-    const end = Math.min(marketTotalPages, start + 5);
-    let html = '<button type="button" data-market-page="' + (marketPage - 1) + '"' + (marketPage === 0 ? ' disabled' : '') + '>이전</button>';
-    for (let page = start; page < end; page += 1) {
-      html += '<button type="button" data-market-page="' + page + '"' + (page === marketPage ? ' class="active" aria-current="page"' : '') + '>' + (page + 1) + '</button>';
-    }
-    html += '<button type="button" data-market-page="' + (marketPage + 1) + '"' + (marketPage + 1 >= marketTotalPages ? ' disabled' : '') + '>다음</button>';
-    pagination.innerHTML = html;
-    pagination.hidden = false;
-  }
-
-  function renderMarketMarkers() {
-    clearMarkerMap(marketMarkers); marketMarkers.clear();
-    if (!propertyMap || !window.L) return;
-    const points = marketTransactions.filter(function (item) { return Number.isFinite(Number(item.lat)) && Number.isFinite(Number(item.lng)); });
-    points.forEach(function (item) {
-      const marker = L.marker([Number(item.lat), Number(item.lng)], {
-        icon: L.divIcon({ html: '<button class="market-map-marker">' + money(Number(item.dealAmount || 0)) + '만</button>' }),
-        title: item.aptName || '아파트 실거래가'
-      }).on('click', function () { openMarketDetail(Number(item.transactionId)); });
-      marketMarkers.set(item.transactionId, marker); marker.addTo(propertyMap);
-    });
-  }
-
-  async function focusSelectedMarketRegion() {
-    if (!propertyMap || marketBounds) return;
-    const sido = document.getElementById('marketSido').value;
-    const lawdCd = document.getElementById('marketRegion').value;
-    if (!lawdCd) {
-      const fallback = sido === 'seoul' ? [37.5665,126.9780] : (sido === 'gyeonggi' ? [37.4138,127.5183] : [37.50,127.08]);
-      propertyMap.flyTo(fallback, sido === 'all' ? 9 : 10, { duration:.55 });
-      return;
-    }
-    const region = marketRegions.find(function (item) { return item[1] === lawdCd; });
-    if (!region) return;
-    const fixedCenter = marketRegionFallbackCenters[lawdCd];
-    if (fixedCenter) {
-      marketRegionCenters.set(lawdCd, fixedCenter);
-      propertyMap.flyTo(fixedCenter, 13, { duration:.55 });
-      return;
-    }
-    if (marketRegionCenters.has(lawdCd)) {
-      propertyMap.flyTo(marketRegionCenters.get(lawdCd), 13, { duration:.55 });
-      return;
-    }
-    const query = (region[0] === 'seoul' ? '서울특별시 ' : '경기도 ') + region[2];
-    try {
-      const response = await fetch('/api/safety/geocode?query=' + encodeURIComponent(query), { credentials:'same-origin' });
-      const payload = await response.json();
-      const location = payload.location || {};
-      const lat = Number(location.latitude == null ? location.lat : location.latitude);
-      const lng = Number(location.longitude == null ? location.lng : location.longitude);
-      if (!response.ok || !Number.isFinite(lat) || !Number.isFinite(lng)) throw new Error('지역 좌표 없음');
-      const center = [lat,lng];
-      marketRegionCenters.set(lawdCd, center);
-      propertyMap.flyTo(center, 13, { duration:.55 });
-    } catch (error) {
-      const fallback = region[0] === 'seoul' ? [37.5665,126.9780] : [37.4138,127.5183];
-      propertyMap.flyTo(fallback, 10, { duration:.55 });
-    }
-  }
-
-  async function focusSelectedListingRegion() {
-    if (!propertyMap) return;
-    const sequence = ++listingRegionFocusSequence;
-    const sidoSelect = document.getElementById('listingSido');
-    const regionSelect = document.getElementById('listingRegion');
-    const sido = sidoSelect.value;
-    const regionName = regionSelect.value;
-    if (!regionName) {
-      const center = sidoMapCenters[sido] || sidoMapCenters.all;
-      propertyMap.flyTo([center[0], center[1]], center[2], { duration:.55 });
-      return;
-    }
-
-    const fixedRegion = marketRegions.find(function (region) {
-      return region[2] === regionName && (sido === 'all' || region[0] === sido);
-    });
-    if (fixedRegion && marketRegionFallbackCenters[fixedRegion[1]]) {
-      propertyMap.flyTo(marketRegionFallbackCenters[fixedRegion[1]], 13, { duration:.55 });
-      return;
-    }
-
-    const sidoName = sido === 'all' ? '' : sidoSelect.options[sidoSelect.selectedIndex].text;
-    const query = [sidoName, regionName].filter(Boolean).join(' ');
-    try {
-      const response = await fetch('/api/safety/geocode?query=' + encodeURIComponent(query), { credentials:'same-origin' });
-      const payload = await response.json();
-      const location = payload.location || {};
-      const lat = Number(location.latitude == null ? location.lat : location.latitude);
-      const lng = Number(location.longitude == null ? location.lng : location.longitude);
-      if (!response.ok || !Number.isFinite(lat) || !Number.isFinite(lng)) throw new Error('지역 좌표 없음');
-      if (sequence !== listingRegionFocusSequence) return;
-      propertyMap.flyTo([lat,lng], 13, { duration:.55 });
-    } catch (error) {
-      if (sequence !== listingRegionFocusSequence) return;
-      const fallback = sidoMapCenters[sido] || sidoMapCenters.all;
-      propertyMap.flyTo([fallback[0],fallback[1]], fallback[2], { duration:.55 });
-      showToast('관심 지역의 중심 좌표를 찾지 못해 시·도 중심으로 이동했어요.');
-    }
-  }
-
   function propertyPhoto(property, official, detailView) {
-    const uploadedImage = !official && (property.imageUrl || (Array.isArray(property.imageUrls) && property.imageUrls[0]));
     const image = official
       ? 'static/img/properties/public-housing.jpg'
-      : (uploadedImage || (Number(property.tone) % 2 === 0 ? 'static/img/properties/two-room.jpg' : 'static/img/properties/studio.jpg'));
-    const label = official ? '공공임대 대표 예시 이미지' : (uploadedImage ? '등록 매물 대표 사진' : '매물 공간 예시 이미지');
-    const badge = official ? 'LH 공고 · 예시 이미지' : ((uploadedImage ? '등록 사진 · ' : '예시 이미지 · 사진 ') + Number(property.photos || 0) + '장');
+      : (Number(property.tone) % 2 === 0 ? 'static/img/properties/two-room.jpg' : 'static/img/properties/studio.jpg');
+    const label = official ? '공공임대 대표 예시 이미지' : '매물 공간 예시 이미지';
+    const badge = official ? 'LH 공고 · 예시 이미지' : '예시 이미지 · 사진 ' + Number(property.photos || 0) + '장';
     return '<div class="property-photo has-image tone-' + Number(property.tone || 1) + (detailView ? ' detail-hero' : '') + '">' +
       '<img src="' + image + '" alt="' + label + '" loading="' + (detailView ? 'eager' : 'lazy') + '" decoding="async" onerror="this.parentNode.classList.remove(\'has-image\');this.remove()">' +
       (!official && property.safe >= 85 ? '<span class="safe-ribbon">안심 ' + property.safe + '</span>' : '') +
@@ -514,52 +278,16 @@
   }
 
   function render() {
-    if (state.category === 'market') {
-      const transactions = filteredMarketTransactions();
-      const mappedCount = transactions.filter(function (item) { return Number.isFinite(Number(item.lat)) && Number.isFinite(Number(item.lng)); }).length;
-      const mapStatus = document.getElementById('marketMapStatus');
-      mapStatus.textContent = transactions.length
-        ? '현재 페이지 ' + transactions.length + '건 중 ' + mappedCount + '건을 지도에 표시합니다.' + (mappedCount < transactions.length ? ' 좌표가 없는 거래도 검색 결과에는 포함됩니다.' : '')
-        : '조회 조건에 맞는 거래가 없습니다.';
-      displayedProperties = [];
-      document.getElementById('listingCount').textContent = marketTotalCount.toLocaleString('ko-KR');
-      document.getElementById('sheetResultCount').textContent = marketTotalCount.toLocaleString('ko-KR');
-      if (marketLoading) {
-        propertyList.innerHTML = '<div class="list-loading"><i></i><span>국토교통부 실거래가를 불러오고 있어요</span></div>';
-      } else if (marketLoadError) {
-        propertyList.innerHTML = '<div class="empty-list"><span>!</span><h2>실거래가를 불러오지 못했어요</h2><p>' + escapeHtml(marketLoadError) + '</p></div>';
-      } else if (!transactions.length) {
-        propertyList.innerHTML = '<div class="empty-list"><span>⌕</span><h2>조회된 실거래가가 없어요</h2><p>아파트명이나 동 이름을 다시 검색해 보세요.</p></div>';
-      } else {
-        propertyList.innerHTML = transactions.map(marketTransactionCard).join('');
-      }
-      renderMarketPagination();
-      clearMarkerMap(propertyMarkers);
-      clearMarkerMap(aggregateMarkers);
-      propertyMarkers.clear();
-      aggregateMarkers.clear();
-      renderMarketMarkers();
-      return;
-    }
     displayedProperties = filteredWith();
-    document.getElementById('marketMapStatus').textContent = '';
     document.getElementById('listingCount').textContent = displayedProperties.length;
     document.getElementById('sheetResultCount').textContent = displayedProperties.length;
-    if ((state.category === 'recommended' || state.category === 'favorites' || state.category === 'general' || state.category === 'house') && generalLoading) {
-      propertyList.innerHTML = '<div class="list-loading"><i></i><span>등록 매물을 불러오고 있어요</span></div>';
-    } else if ((state.category === 'recommended' || state.category === 'favorites' || state.category === 'general' || state.category === 'house') && generalLoadError) {
-      propertyList.innerHTML = '<div class="empty-list"><span>!</span><h2>등록 매물을 불러오지 못했어요</h2><p>' + escapeHtml(generalLoadError) + '</p></div>';
-    } else if (state.category === 'public' && publicLoading) {
+    if (state.category === 'public' && publicLoading) {
       propertyList.innerHTML = '<div class="list-loading"><i></i><span>LH 공식 모집공고를 불러오고 있어요</span></div>';
     } else if (state.category === 'public' && publicLoadError) {
-      propertyList.innerHTML = '<div class="public-setup"><strong>' + (publicApiConnected ? '현재 모집 중인 공고가 없어요' : 'LH 공고를 불러오지 못했어요') + '</strong><p>' + escapeHtml(publicLoadError) + '</p>' +
-        (publicApiConnected ? '' : '<code>rpa/run_happy_housing_crawler.bat 실행 결과와 Spring 서버 로그를 확인해 주세요.</code>') + '</div>';
+      propertyList.innerHTML = '<div class="public-setup"><strong>' + (publicApiConnected ? '현재 모집 중인 공고가 없어요' : '공공데이터 연결이 필요해요') + '</strong><p>' + escapeHtml(publicLoadError) + '</p>' +
+        (publicApiConnected ? '' : '<code>.env 파일에 PUBLIC_DATA_SERVICE_KEY를 입력한 뒤 서버를 다시 시작해 주세요.</code>') + '</div>';
     } else if (!displayedProperties.length) {
-      propertyList.innerHTML = state.category === 'public'
-        ? '<div class="empty-list"><span>⌕</span><h2>검색 조건에 맞는 LH 공고가 없어요</h2><p>공고명이나 지역 검색어를 바꾸거나 최신 수집 결과를 확인해 주세요.</p></div>'
-        : (state.category === 'favorites'
-          ? '<div class="empty-list"><span>♡</span><h2>아직 찜한 매물이 없어요</h2><p>ZipAI 추천 매물에서 마음에 드는 매물을 찜해 보세요.</p></div>'
-          : '<div class="empty-list"><span>⌕</span><h2>조건에 맞는 방이 없어요</h2><p>지역이나 상세 조건을 조금 넓혀보세요.</p></div>');
+      propertyList.innerHTML = '<div class="empty-list"><span>⌕</span><h2>조건에 맞는 방이 없어요</h2><p>지역이나 상세 조건을 조금 넓혀보세요.</p></div>';
     } else propertyList.innerHTML = displayedProperties.map(propertyCard).join('');
     renderMarkers();
     if (state.selected && !displayedProperties.some(function (item) { return item.id === state.selected; })) closeDetail();
@@ -572,7 +300,7 @@
   }
 
   function markerLabel(property) {
-    if (property.source === 'LH청약플러스 수집') return 'LH 공고';
+    if (property.source === 'LH 공공데이터') return 'LH 공고';
     if (isSafetyMode()) return safetyPalette[safetyTone(property.safe)].label;
     return dealLabel(property) + ' ' + priceText(property);
   }
@@ -674,7 +402,7 @@
 
   function groupedProperties(level) {
     const groups = new Map();
-    displayedProperties.filter(hasMapCoordinates).forEach(function (property) {
+    displayedProperties.forEach(function (property) {
       const key = groupKey(property, level);
       if (!groups.has(key)) {
         groups.set(key, {
@@ -716,7 +444,7 @@
 
   function safetySubjects(level) {
     if (level === 'property') {
-      return displayedProperties.filter(hasMapCoordinates).map(function (property) {
+      return displayedProperties.map(function (property) {
         return {
           lat: property.lat,
           lng: property.lng,
@@ -864,10 +592,8 @@
   }
 
   function fitDisplayedProperties() {
-    if (!propertyMap) return;
-    const mappedProperties = displayedProperties.filter(hasMapCoordinates);
-    if (!mappedProperties.length) return;
-    const bounds = L.latLngBounds(mappedProperties.map(function (property) {
+    if (!propertyMap || !displayedProperties.length) return;
+    const bounds = L.latLngBounds(displayedProperties.map(function (property) {
       return [property.lat, property.lng];
     }));
     propertyMap.flyToBounds(bounds, {
@@ -887,7 +613,7 @@
   }
 
   function focusPropertyOnMap(property) {
-    if (!propertyMap || !hasMapCoordinates(property)) return;
+    if (!propertyMap || !property) return;
     propertyMap.invalidateSize();
     propertyMap.flyTo([property.lat, property.lng], Math.max(propertyMap.getZoom(), 15), {
       animate: true,
@@ -913,7 +639,7 @@
     clearMarkerMap(aggregateMarkers);
     aggregateMarkers.clear();
 
-    const visibleIds = new Set(displayedProperties.filter(hasMapCoordinates).map(function (property) { return property.id; }));
+    const visibleIds = new Set(displayedProperties.map(function (property) { return property.id; }));
     properties.forEach(function (property) {
       const visible = visibleIds.has(property.id);
       let marker = propertyMarkers.get(property.id);
@@ -950,10 +676,6 @@
   }
 
   function toggleFavorite(id) {
-    if (!window.ZipaiAuth || !window.ZipaiAuth.getUser()) {
-      visitLoginGate();
-      return;
-    }
     if (favorites.includes(id)) favorites = favorites.filter(function (value) { return value !== id; });
     else favorites.push(id);
     saveFavorites(true); render();
@@ -966,11 +688,11 @@
     if (!property) return;
     state.selected = id;
     const liked = favorites.includes(id);
-    if (property.source === 'LH청약플러스 수집') {
+    if (property.source === 'LH 공공데이터') {
       document.getElementById('detailContent').innerHTML = propertyPhoto(property, true, true) + '<div class="detail-body">' +
-        '<div class="detail-topline"><span class="detail-safe">✓ LH청약플러스 공고 수집</span></div>' +
+        '<div class="detail-topline"><span class="detail-safe">✓ 공공데이터포털 연계</span></div>' +
         '<h2><span class="deal-badge monthly">공공임대</span></h2><p class="detail-title">' + escapeHtml(property.title) + '</p><p class="detail-address">' + escapeHtml(property.address) + '</p>' +
-        '<dl class="detail-stats"><div><dt>공고 유형</dt><dd>' + escapeHtml(property.type) + '</dd></div><div><dt>공고 상태</dt><dd>' + escapeHtml(property.status || '공고중') + '</dd></div><div><dt>위치 표시</dt><dd>정확한 좌표가 있는 공고만</dd></div></dl>' +
+        '<dl class="detail-stats"><div><dt>공고 유형</dt><dd>' + escapeHtml(property.type) + '</dd></div><div><dt>공고 상태</dt><dd>' + escapeHtml(property.status || '공고중') + '</dd></div><div><dt>위치 표시</dt><dd>시·군 대표 위치</dd></div></dl>' +
         '<section class="detail-section"><h3>데이터 안내</h3><p>LH 공식 모집공고를 표시합니다. 신청 자격, 정확한 소재지, 보증금과 임대료는 반드시 원문 공고에서 확인하세요.</p></section></div>' +
         '<div class="detail-actions"><a href="' + escapeHtml(property.publicUrl) + '" target="_blank" rel="noopener noreferrer">LH 원문 공고 확인</a></div>';
       detail.classList.add('open'); detail.setAttribute('aria-hidden', 'false');
@@ -980,43 +702,17 @@
     document.getElementById('detailContent').innerHTML = propertyPhoto(property, false, true) + '<div class="detail-body">' +
       '<div class="detail-topline"><span class="detail-safe">✓ 집도소 안전점수 ' + property.safe + '</span><button type="button" class="detail-favorite' + (liked ? ' active' : '') + '" data-favorite="' + id + '">' + (liked ? '♥' : '♡') + '</button></div>' +
       '<h2><span class="deal-badge ' + property.deal + '">' + dealLabel(property) + '</span> ' + priceText(property) + '</h2><p class="detail-title">' + property.title + '</p><p class="detail-address">' + property.address + ' · ' + property.walk + '</p>' +
-      '<dl class="detail-stats"><div><dt>전용면적</dt><dd>' + property.area + '㎡</dd></div><div><dt>해당 층</dt><dd>' + property.floor + '</dd></div><div><dt>관리비</dt><dd>' + maintenanceText(property.maintenance) + '</dd></div></dl>' +
+      '<dl class="detail-stats"><div><dt>전용면적</dt><dd>' + property.area + '㎡</dd></div><div><dt>해당 층</dt><dd>' + property.floor + '</dd></div><div><dt>관리비</dt><dd>' + (property.maintenance ? property.maintenance + '만원' : '없음') + '</dd></div></dl>' +
       '<section class="detail-section"><h3>옵션 정보</h3><div class="option-grid">' + property.options.map(function (option) { return '<span>✓ ' + option + '</span>'; }).join('') + '</div></section>' +
-      '<section class="detail-section property-market-comparison" id="propertyMarketComparison"><h3>인근 아파트 실거래 비교</h3><p>비슷한 면적의 최근 거래를 확인하고 있어요.</p></section>' +
-      '<section class="detail-section"><h3>보증금 안전 진단</h3><div class="safety-score-box"><span class="safety-score-ring">' + property.safe + '</span><p>기본 권리관계 기준으로 확인했어요.<br><a href="/defense/result">계약 전 정밀 진단하기 →</a></p></div></section></div>' +
-      '<div class="detail-actions"><a href="/defense/checklist">안전 진단</a><button type="button" data-inquiry="' + id + '">방문 상담 신청</button></div>';
+      '<section class="detail-section"><h3>보증금 안전 진단</h3><div class="safety-score-box"><span class="safety-score-ring">' + property.safe + '</span><p>기본 권리관계 기준으로 확인했어요.<br><a href="templates/defense/fraud_result.html">계약 전 정밀 진단하기 →</a></p></div></section></div>' +
+      '<div class="detail-actions"><a href="templates/defense/checklist.html">안전 진단</a><button type="button" data-inquiry="' + id + '">방문 상담 신청</button></div>';
     detail.classList.add('open'); detail.setAttribute('aria-hidden', 'false');
     renderMarkers();
     focusPropertyOnMap(property);
-    loadPropertyMarketComparison(property);
     document.querySelectorAll('.property-card').forEach(function (card) { card.classList.toggle('active', Number(card.dataset.id) === id); });
     if (scrollCard) {
       const card = document.querySelector('.property-card[data-id="' + id + '"]');
       if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  }
-
-  async function loadPropertyMarketComparison(property) {
-    const target = document.getElementById('propertyMarketComparison');
-    if (!target) return;
-    const locationText = [property.district, property.neighborhood, property.address].filter(Boolean).join(' ');
-    const matched = marketRegions.find(function (region) {
-      return locationText.includes(region[2]) || region[2].split(' ').every(function (part) { return locationText.includes(part); });
-    });
-    if (!matched) { target.innerHTML = '<h3>인근 아파트 실거래 비교</h3><p>비교할 시·군·구를 확인할 수 없습니다.</p>'; return; }
-    const params = new URLSearchParams({ lawdCd: matched[1], size: '5', page: '0', excludeCancelled: 'true' });
-    const area = Number(property.area || 0);
-    if (area > 0) { params.set('minArea', String(Math.max(0, area - 10))); params.set('maxArea', String(area + 10)); }
-    try {
-      const response = await fetch('/api/properties/market-transactions?' + params.toString(), { credentials: 'same-origin' });
-      const payload = await response.json();
-      const rows = response.ok && Array.isArray(payload.items) ? payload.items : [];
-      if (!rows.length) { target.innerHTML = '<h3>인근 아파트 실거래 비교</h3><p>비슷한 면적의 최근 거래가 없습니다.</p>'; return; }
-      const amounts = rows.map(function (row) { return Number(row.dealAmount || 0); }).filter(Boolean);
-      const average = amounts.length ? Math.round(amounts.reduce(function (sum, value) { return sum + value; }, 0) / amounts.length) : 0;
-      target.innerHTML = '<h3>인근 아파트 실거래 비교</h3><strong>최근 평균 ' + money(average) + '만원</strong><p>' + escapeHtml(matched[2]) + ' · 전용면적 ±10㎡ · 최근 ' + rows.length + '건 기준</p>';
-    } catch (error) {
-      target.innerHTML = '<h3>인근 아파트 실거래 비교</h3><p>비교 정보를 불러오지 못했습니다.</p>';
     }
   }
 
@@ -1034,9 +730,7 @@
   function closeSheet(sheet) { sheet.classList.remove('open'); sheet.setAttribute('aria-hidden', 'true'); }
   function detailedFilterCount() { return [state.maxMonthly < 150, state.maxDeposit < 30000, state.parking, state.elevator, state.pet, state.safeOnly].filter(Boolean).length; }
   function updateFilterBadge() {
-    const count = detailedFilterCount(); const badge = document.getElementById('activeFilterCount');
-    if (!badge) return;
-    badge.hidden = count === 0; badge.textContent = count;
+    const count = detailedFilterCount(); const badge = document.getElementById('activeFilterCount'); badge.hidden = count === 0; badge.textContent = count;
   }
   function previewSheetCount() {
     const temp = { maxMonthly: Number(document.getElementById('monthlyRange').value), maxDeposit: Number(document.getElementById('depositRange').value), parking: document.getElementById('parkingFilter').checked, elevator: document.getElementById('elevatorFilter').checked, pet: document.getElementById('petFilter').checked, safeOnly: document.getElementById('safeFilter').checked };
@@ -1051,129 +745,34 @@
 
   propertyList.addEventListener('click', function (event) {
     const favorite = event.target.closest('[data-favorite]'); if (favorite) { event.stopPropagation(); toggleFavorite(Number(favorite.dataset.favorite)); return; }
-    const marketCard = event.target.closest('[data-market-id]'); if (marketCard) { openMarketDetail(Number(marketCard.dataset.marketId)); return; }
     const card = event.target.closest('.property-card'); if (card) openDetail(Number(card.dataset.id), false);
   });
-  propertyList.addEventListener('keydown', function (event) {
-    if (event.key !== 'Enter' && event.key !== ' ') return;
-    if (event.target.matches('[data-market-id]')) { event.preventDefault(); openMarketDetail(Number(event.target.dataset.marketId)); }
-    else if (event.target.matches('.property-card')) { event.preventDefault(); openDetail(Number(event.target.dataset.id), false); }
-  });
+  propertyList.addEventListener('keydown', function (event) { if ((event.key === 'Enter' || event.key === ' ') && event.target.matches('.property-card')) { event.preventDefault(); openDetail(Number(event.target.dataset.id), false); } });
   document.getElementById('detailClose').addEventListener('click', closeDetail);
   detail.addEventListener('click', function (event) {
     const favorite = event.target.closest('[data-favorite]'); if (favorite) toggleFavorite(Number(favorite.dataset.favorite));
     const inquiry = event.target.closest('[data-inquiry]'); if (inquiry) openInquiry(Number(inquiry.dataset.inquiry));
   });
 
-  function dealName(deal) {
-    return deal === 'sale' ? '매매' : (deal === 'jeonse' ? '전세' : '월세');
-  }
-
-  function updateDealSearchLabels() {
-    const label = state.deal === 'sale' ? '최대 매매가(만원)' : (state.deal === 'jeonse' ? '최대 보증금(만원)' : '최대 월세(만원)');
-    document.getElementById('listingPriceLabel').textContent = label;
-  }
-
-  function categoryName() {
-    if (state.category === 'public') return 'LH·공공임대';
-    if (state.category === 'market') return '아파트 · 실거래가';
-    return state.category === 'house' ? '일반주택' : '아파트';
-  }
-
-  function numberOrNull(id) {
-    const value = document.getElementById(id).value.trim();
-    return value === '' ? null : Number(value);
-  }
-
-  function updateSearchSummary() {
-    const title = state.category === 'market' ? categoryName() : (state.category === 'public' ? categoryName() : categoryName() + ' · ' + dealName(state.deal));
-    const conditions = [];
-    if (state.query) conditions.push('검색어: ' + state.query);
-    if (state.category !== 'market') {
-      const sido = document.getElementById('listingSido');
-      const region = document.getElementById('listingRegion');
-      if (sido.value !== 'all') conditions.push(sido.options[sido.selectedIndex].text);
-      if (region.value) conditions.push(region.options[region.selectedIndex].text);
-    }
-    if (state.category === 'market') {
-      const sido = document.getElementById('marketSido');
-      const region = document.getElementById('marketRegion');
-      const month = document.getElementById('marketDealMonth').value;
-      if (sido.value !== 'all') conditions.push(sido.options[sido.selectedIndex].text);
-      if (region.value) conditions.push(region.options[region.selectedIndex].text);
-      if (month) conditions.push(month.replace('-', '년 ') + '월');
-      const minAmount = document.getElementById('marketMinAmount').value;
-      const maxAmount = document.getElementById('marketMaxAmount').value;
-      const minArea = document.getElementById('marketMinArea').value;
-      const maxArea = document.getElementById('marketMaxArea').value;
-      const dealingType = document.getElementById('marketDealingType').value;
-      if (minAmount) conditions.push(money(Number(minAmount)) + '만원 이상');
-      if (maxAmount) conditions.push(money(Number(maxAmount)) + '만원 이하');
-      if (minArea) conditions.push(minArea + '㎡ 이상');
-      if (maxArea) conditions.push(maxArea + '㎡ 이하');
-      if (dealingType) conditions.push(dealingType);
-    }
-    if (state.maxPrice != null) conditions.push('최대 ' + money(state.maxPrice) + '만원');
-    if (state.minArea != null) conditions.push(state.minArea + '㎡ 이상');
-    if (state.maxArea != null) conditions.push(state.maxArea + '㎡ 이하');
-    if (state.parking) conditions.push('주차');
-    if (state.elevator) conditions.push('엘리베이터');
-    if (state.pet) conditions.push('반려동물');
-    if (!state.includeStudy && state.category !== 'market' && state.category !== 'public') conditions.push('학습용 제외');
-    document.getElementById('searchSummaryTitle').textContent = title;
-    document.getElementById('searchSummaryText').textContent = conditions.length ? conditions.join(' · ') : '전체 지역 · 제한 없음';
-    document.getElementById('searchSummary').hidden = false;
-  }
-
   document.getElementById('dealFilters').addEventListener('click', function (event) {
     const button = event.target.closest('[data-deal]'); if (!button) return;
-    const requestedDeal = button.dataset.deal;
-    if (state.category === 'market') switchCategory('general');
-    state.deal = requestedDeal;
-    updateDealSearchLabels();
-    this.querySelectorAll('[data-deal]').forEach(function (item) { item.classList.toggle('active', item === button); });
-    document.getElementById('listingFilters').hidden = false;
-    document.getElementById('searchSummary').hidden = true;
-    render();
+    state.deal = button.dataset.deal; this.querySelectorAll('[data-deal]').forEach(function (item) { item.classList.toggle('active', item === button); }); render();
   });
+  document.getElementById('roomFilter').addEventListener('change', function () { state.room = this.value; render(); });
   document.getElementById('sortSelect').addEventListener('change', function () { state.sort = this.value; render(); });
-
-  document.getElementById('listingFilterApply').addEventListener('click', function () {
-    state.query = document.getElementById('listingQuery').value.trim();
-    state.sido = document.getElementById('listingSido').value;
-    state.region = document.getElementById('listingRegion').value;
-    state.room = document.getElementById('roomFilter').value;
-    state.maxPrice = numberOrNull('listingMaxPrice');
-    state.minArea = numberOrNull('listingMinArea');
-    state.maxArea = numberOrNull('listingMaxArea');
-    state.parking = document.getElementById('listingParking').checked;
-    state.elevator = document.getElementById('listingElevator').checked;
-    state.pet = document.getElementById('listingPet').checked;
-    state.includeStudy = document.getElementById('listingIncludeStudy').checked;
+  document.getElementById('locationSearch').addEventListener('submit', function (event) {
+    event.preventDefault(); const input = document.getElementById('searchInput'); state.query = input.value;
     state.bounds = null;
-    document.getElementById('listingFilters').hidden = true;
-    const selectedRegion = document.getElementById('listingRegion');
-    const selectedSido = document.getElementById('listingSido');
-    document.getElementById('locationLabel').textContent = selectedRegion.value
-      ? selectedRegion.options[selectedRegion.selectedIndex].text
-      : (selectedSido.value !== 'all' ? selectedSido.options[selectedSido.selectedIndex].text : categoryName());
-    updateSearchSummary();
-    render();
-    fitDisplayedProperties();
+    document.getElementById('locationLabel').textContent = input.value.trim() ? '"' + input.value.trim() + '" 검색 결과' : '경기도 전체';
+    const loading = document.getElementById('listLoading'); propertyList.hidden = true; loading.hidden = false;
+    setTimeout(function () { loading.hidden = true; propertyList.hidden = false; render(); }, 420);
   });
 
-  document.getElementById('changeSearchConditions').addEventListener('click', function () {
-    document.getElementById('searchSummary').hidden = true;
-    if (state.category === 'market') document.getElementById('marketFilters').hidden = false;
-    else document.getElementById('listingFilters').hidden = false;
+  document.getElementById('openFilterButton').addEventListener('click', function () {
+    document.getElementById('monthlyRange').value = state.maxMonthly; document.getElementById('depositRange').value = state.maxDeposit;
+    document.getElementById('parkingFilter').checked = state.parking; document.getElementById('elevatorFilter').checked = state.elevator; document.getElementById('petFilter').checked = state.pet; document.getElementById('safeFilter').checked = state.safeOnly;
+    updateRangeLabels(); openSheet(filterSheet);
   });
-
-  document.getElementById('listingSido').addEventListener('change', function () {
-    populateListingRegions();
-    focusSelectedListingRegion();
-  });
-  document.getElementById('listingRegion').addEventListener('change', focusSelectedListingRegion);
-
   filterSheet.querySelector('.sheet-close').addEventListener('click', function () { closeSheet(filterSheet); });
   filterSheet.querySelectorAll('input').forEach(function (input) { input.addEventListener('input', updateRangeLabels); });
   document.getElementById('applyFilters').addEventListener('click', function () {
@@ -1183,6 +782,18 @@
   document.getElementById('resetFilters').addEventListener('click', function () {
     document.getElementById('monthlyRange').value = 150; document.getElementById('depositRange').value = 30000; filterSheet.querySelectorAll('input[type="checkbox"]').forEach(function (input) { input.checked = false; }); updateRangeLabels();
   });
+
+  const savedHomesButton = document.getElementById('savedHomesButton');
+  if (savedHomesButton) {
+    savedHomesButton.addEventListener('click', function () {
+      if (!favorites.length) { showToast('아직 찜한 매물이 없어요.'); return; }
+      state.favoritesOnly = !state.favoritesOnly;
+      this.classList.toggle('active', state.favoritesOnly);
+      this.setAttribute('aria-pressed', String(state.favoritesOnly));
+      render();
+      showToast(state.favoritesOnly ? '찜한 매물만 모아볼게요.' : '전체 매물을 보여드려요.');
+    });
+  }
 
   document.querySelectorAll('[data-map-mode]').forEach(function (button) {
     button.addEventListener('click', function () {
@@ -1208,12 +819,6 @@
   document.getElementById('searchThisArea').addEventListener('click', function () {
     const button = this;
     button.innerHTML = '<span>↻</span> 검색 중';
-    if (propertyMap && state.category === 'market') {
-      marketBounds = propertyMap.getBounds(); marketPage = 0; loadMarketTransactions(true);
-      button.innerHTML = '<span>✓</span> 검색 완료';
-      setTimeout(function () { button.innerHTML = '<span>↻</span> 현 지도에서 검색'; }, 1200);
-      return;
-    }
     if (propertyMap) state.bounds = propertyMap.getBounds();
     setTimeout(function () {
       render();
@@ -1276,52 +881,10 @@
     });
   });
 
-  function visitLoginGate() {
-    if (window.ZipaiAuth && window.ZipaiAuth.getUser()) return true;
-    const target = location.pathname + location.search + location.hash;
-    sessionStorage.setItem('zipaiLoginReturn', target);
-    window.alert('로그인 후 이용할 수 있습니다.');
-    location.href = '/member/login?returnTo=' + encodeURIComponent(target);
-    return false;
-  }
-  function prepareVisitFields() {
-    if (document.getElementById('homeVisitDate')) return;
-    const fields = document.createElement('div');
-    fields.innerHTML = '<label style="display:block;margin:12px 0">방문 희망일 <input id="homeVisitDate" type="date" required></label>' +
-      '<label style="display:block;margin:12px 0">방문 희망시간 <input id="homeVisitTime" type="time" required></label>' +
-      '<p>신청 후 마이페이지에서 처리 상태를 확인하세요. 운영자가 등록한 매물은 관리자가 처리합니다.</p>';
-    document.getElementById('submitInquiry').before(fields);
-    const today = new Date();
-    today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
-    document.getElementById('homeVisitDate').min = today.toISOString().slice(0, 10);
-  }
-  function openInquiry(id) { if (!visitLoginGate()) return; prepareVisitFields(); const property = properties.find(function (item) { return item.id === id; }); inquiryModal.dataset.id = id; document.getElementById('inquiryPropertyName').textContent = property.title + ' · ' + dealLabel(property) + ' ' + priceText(property); openSheet(inquiryModal); }
+  function openInquiry(id) { const property = properties.find(function (item) { return item.id === id; }); inquiryModal.dataset.id = id; document.getElementById('inquiryPropertyName').textContent = property.title + ' · ' + dealLabel(property) + ' ' + priceText(property); openSheet(inquiryModal); }
   inquiryModal.querySelector('.inquiry-close').addEventListener('click', function () { closeSheet(inquiryModal); });
   document.getElementById('phoneInput').addEventListener('input', function () { const number = this.value.replace(/[^0-9]/g,'').slice(0,11); this.value = number.length > 7 ? number.slice(0,3) + '-' + number.slice(3,7) + '-' + number.slice(7) : number.length > 3 ? number.slice(0,3) + '-' + number.slice(3) : number; });
-  document.getElementById('submitInquiry').addEventListener('click', async function () {
-    if (!visitLoginGate()) return;
-    const phone = document.getElementById('phoneInput');
-    const date = document.getElementById('homeVisitDate');
-    const time = document.getElementById('homeVisitTime');
-    if (phone.value.replace(/[^0-9]/g, '').length < 10) { phone.focus(); showToast('연락받을 휴대폰 번호를 확인해 주세요.'); return; }
-    if (!date || !date.reportValidity() || !time.reportValidity()) return;
-    const submit = document.getElementById('submitInquiry'); submit.disabled = true;
-    try {
-      const response = await fetch('/api/visits', {
-        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ roomId: 'LISTING-' + inquiryModal.dataset.id, date: date.value, time: time.value, phone: phone.value })
-      });
-      const payload = await response.json().catch(function () { return {}; });
-      if (response.status === 401) {
-        if (window.ZipaiAuth && window.ZipaiAuth.refreshUser) await window.ZipaiAuth.refreshUser();
-        visitLoginGate(); return;
-      }
-      if (!response.ok) throw new Error(payload.message || '방문 신청을 저장하지 못했습니다.');
-      closeSheet(inquiryModal); phone.value = ''; date.value = ''; time.value = '';
-      showToast('방문 신청이 저장됐습니다. 마이페이지에서 확인하세요.');
-    } catch (error) { showToast(error.message); }
-    finally { submit.disabled = false; }
-  });
+  document.getElementById('submitInquiry').addEventListener('click', function () { const phone = document.getElementById('phoneInput'); if (phone.value.replace(/[^0-9]/g,'').length < 10) { phone.focus(); showToast('연락받을 휴대폰 번호를 확인해 주세요.'); return; } closeSheet(inquiryModal); phone.value = ''; showToast('데모 상담 신청이 완료됐어요.'); });
   [filterSheet, inquiryModal].forEach(function (sheet) { sheet.addEventListener('click', function (event) { if (event.target === sheet) closeSheet(sheet); }); });
   document.addEventListener('keydown', function (event) { if (event.key === 'Escape') { closeSheet(filterSheet); closeSheet(inquiryModal); closeSheet(listingRegistrationModal); closeDetail(); } });
   document.querySelectorAll('[data-demo-link],[data-demo-button]').forEach(function (item) { item.addEventListener('click', function (event) { event.preventDefault(); showToast('이 메뉴는 메인 홈 데모에서 준비 중이에요.'); }); });
@@ -1333,25 +896,20 @@
 
   function publicNoticeToProperty(notice, index) {
     const title = String(notice.title || 'LH 공공임대 모집공고');
-    const region = String(notice.region || '지역은 공고문 참조');
-    const city = detectCity(title + ' ' + region);
-    const regionText = title + ' ' + region;
-    const sidoKey = propertySidoKey({ address: regionText });
-    const sidoEntry = sidoAliases.find(function (entry) { return entry[0] === sidoKey; });
-    const interestRegion = city || extractInterestRegion(regionText);
+    const city = detectCity(title + ' ' + (notice.region || ''));
+    const center = cityCenters[city] || defaultMapCenter;
+    const jitter = ((Number(notice.id) || index) % 9 - 4) * 0.0015;
     return {
-      id: Number(notice.noticeId || notice.id) || 800000 + index,
+      id: Number(notice.id) || 800000 + index,
       title: title,
       deal: 'monthly',
-      type: notice.housingType || notice.type || '공공임대',
+      type: notice.type || '공공임대',
       deposit: 0,
       monthly: 0,
       maintenance: 0,
       area: 0,
       floor: '공고 참조',
-      address: region,
-      sido: sidoEntry ? sidoEntry[1][0] : '',
-      sigungu: interestRegion,
+      address: city ? '경기도 ' + city : '경기도 (상세 주소는 공고 참조)',
       walk: '자격·일정 확인',
       tags: [notice.status || '공고중', 'LH', '공공임대'],
       options: [],
@@ -1361,14 +919,14 @@
       safe: 85,
       photos: 0,
       tone: index % 5 + 1,
-      lat: null,
-      lng: null,
-      district: interestRegion || region,
-      neighborhood: interestRegion || region,
-      source: 'LH청약플러스 수집',
-      verifiedAt: notice.crawledAt || notice.noticeDate || '수집일 미확인',
+      lat: center[0] + jitter,
+      lng: center[1] - jitter,
+      district: city || '경기도',
+      neighborhood: city || '공공임대',
+      source: 'LH 공공데이터',
+      verifiedAt: notice.fetchedAt || '실시간 조회',
       status: notice.status || '공고중',
-      publicUrl: 'https://apply.lh.or.kr/lhapply/apply/wt/wrtanc/selectWrtancList.do?mi=1026'
+      publicUrl: notice.detailUrl || 'https://apply.lh.or.kr/'
     };
   }
 
@@ -1378,14 +936,13 @@
     publicLoadError = '';
     render();
     try {
-      const response = await fetch('/api/happy-housing/notices');
+      const response = await fetch('/api/public-housing');
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.message || '공공임대 API를 불러오지 못했습니다.');
       publicApiConnected = true;
-      publicProperties = (Array.isArray(payload) ? payload : []).map(publicNoticeToProperty);
+      publicProperties = (payload.items || []).map(publicNoticeToProperty).filter(isGyeonggiProperty);
       properties = publicProperties;
-      populateListingRegions();
-      if (!publicProperties.length) publicLoadError = '현재 DB에 저장된 행복주택 공고가 없습니다. LH 크롤러를 실행해 주세요.';
+      if (!publicProperties.length) publicLoadError = '현재 조회 조건에 맞는 경기도 공고중 모집공고가 없습니다.';
     } catch (error) {
       publicLoadError = location.protocol === 'file:'
         ? '공식 API는 index.html 파일을 직접 열면 사용할 수 없습니다. 아래 명령으로 로컬 서버를 실행하고 접속해 주세요.'
@@ -1399,130 +956,29 @@
     }
   }
 
-  async function loadServerSaleProperties() {
-    generalLoading = true;
-    generalLoadError = '';
-    if (state.category === 'recommended' || state.category === 'favorites' || state.category === 'general' || state.category === 'house') render();
+  async function loadAdminExcelProperties() {
+    if (adminExcelLoaded) return;
     try {
-      const response = await fetch('/api/properties', { credentials: 'same-origin' });
-      if (!response.ok) throw new Error('일반 매물 API를 불러오지 못했습니다.');
+      const response = await fetch('/api/general-properties');
+      if (!response.ok) return;
       const payload = await response.json();
-      generalProperties = (payload.items || []).map(function (property) {
-        const deal = String(property.deal || property.dealType || 'monthly').toLowerCase();
-        const dealText = deal === 'sale' ? '매매' : (deal === 'jeonse' ? '전세' : '월세');
-        return Object.assign({
-          options: [],
-          safe: Number(property.safe || 80),
-          tone: Number(property.tone || 1)
-        }, property, {
-          walk: dealText + ' 등록',
-          deal: deal,
-          tags: [dealText].concat(property.buildingType ? [property.buildingType] : []),
-          salePrice: Number(property.salePrice || 0),
-          deposit: Number(property.deposit || 0),
-          monthly: Number(property.monthly || 0),
-          maintenance: Number(property.maintenance || 0),
-          area: Number(property.area || 0),
-          photos: Number(property.photos || (Array.isArray(property.imageUrls) ? property.imageUrls.length : 0))
-        });
-      }).filter(isSupportedProperty);
-      populateListingRegions();
-      saveFavorites(false);
-    } catch (error) {
-      generalProperties = [];
-      generalLoadError = error && error.message ? error.message : '일반 매물을 불러오지 못했습니다.';
-    } finally {
-      generalLoading = false;
-      if (state.category === 'recommended' || state.category === 'favorites' || state.category === 'general' || state.category === 'house') {
+      const excelProperties = (payload.items || []).filter(isGyeonggiProperty);
+      if (!excelProperties.length) return;
+      const excelIds = new Set(excelProperties.map(function (property) { return property.id; }));
+      generalProperties = additionalProperties.concat(sampleProperties.filter(function (property) {
+        return property.district !== '성남시' && !excelIds.has(property.id);
+      })).concat(getRegisteredProperties()).concat(excelProperties).filter(isGyeonggiProperty);
+      saveFavorites();
+      adminExcelLoaded = true;
+      if (state.category === 'general') {
         properties = generalProperties;
         initialMapFitDone = false;
         render();
         fitDisplayedProperties();
+        showToast('관리자 Excel의 성남시 매물 10건을 불러왔어요.');
       }
-    }
-  }
-
-  function populateMarketRegions() {
-    const sido = document.getElementById('marketSido').value;
-    const select = document.getElementById('marketRegion');
-    const selected = select.value;
-    const regions = marketRegions.filter(function (region) { return sido === 'all' || region[0] === sido; });
-    select.innerHTML = '<option value="">전체 지역</option>' + regions.map(function (region) {
-      return '<option value="' + region[1] + '">' + escapeHtml(region[2]) + '</option>';
-    }).join('');
-    if (regions.some(function (region) { return region[1] === selected; })) select.value = selected;
-  }
-
-  function populateListingRegions() {
-    const sido = document.getElementById('listingSido').value;
-    const select = document.getElementById('listingRegion');
-    const selected = select.value;
-    let regions = [];
-    if (state.category === 'public') {
-      regions = publicProperties.filter(function (property) {
-        return sido === 'all' || propertySidoKey(property) === sido;
-      }).map(function (property) {
-        return property.sigungu || property.district || extractInterestRegion(property.address);
-      });
-    } else {
-      regions = marketRegions.filter(function (region) {
-        return sido === 'all' || region[0] === sido;
-      }).map(function (region) { return region[2]; });
-    }
-    regions = Array.from(new Set(regions.filter(function (region) {
-      return region && region !== '지역은 공고문 참조';
-    }))).sort(function (a, b) { return a.localeCompare(b, 'ko'); });
-    select.innerHTML = '<option value="">전체 시·군·구</option>' + regions.map(function (region) {
-      return '<option value="' + escapeHtml(region) + '">' + escapeHtml(region) + '</option>';
-    }).join('');
-    if (regions.includes(selected)) select.value = selected;
-  }
-
-  function marketRequestParams() {
-    const params = new URLSearchParams({ page: String(marketPage), size: String(marketPageSize) });
-    const sido = document.getElementById('marketSido').value;
-    const lawdCd = document.getElementById('marketRegion').value;
-    const dealMonth = document.getElementById('marketDealMonth').value.replace('-', '');
-    const query = state.query.trim();
-    const optional = {
-      minAmount: document.getElementById('marketMinAmount').value,
-      maxAmount: document.getElementById('marketMaxAmount').value,
-      minArea: document.getElementById('marketMinArea').value,
-      maxArea: document.getElementById('marketMaxArea').value,
-      minBuildYear: document.getElementById('marketMinBuildYear').value,
-      dealingType: document.getElementById('marketDealingType').value
-    };
-    if (sido !== 'all') params.set('sido', sido);
-    if (lawdCd) params.set('lawdCd', lawdCd);
-    if (dealMonth) params.set('dealYmd', dealMonth);
-    if (query) params.set('query', query);
-    Object.keys(optional).forEach(function (key) { if (optional[key] !== '') params.set(key, optional[key]); });
-    if (document.getElementById('marketExcludeCancelled').checked) params.set('excludeCancelled', 'true');
-    if (marketBounds) ['minLat','maxLat','minLng','maxLng'].forEach(function (key) { params.set(key, String(marketBounds[key])); });
-    return params;
-  }
-
-  async function loadMarketTransactions(force) {
-    if (marketLoading || (!force && marketTransactions.length)) return;
-    marketLoading = true;
-    marketLoadError = '';
-    render();
-    try {
-      const response = await fetch('/api/properties/market-transactions?' + marketRequestParams().toString(), { credentials: 'same-origin' });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload.message || '실거래가 조회 API를 불러오지 못했습니다.');
-      marketTransactions = Array.isArray(payload.items) ? payload.items : [];
-      marketTotalCount = Number(payload.totalCount || 0);
-      marketTotalPages = Number(payload.totalPages || 0);
-      marketPage = Number(payload.page || 0);
     } catch (error) {
-      marketLoadError = error.message || '실거래가 조회 중 오류가 발생했습니다.';
-      marketTransactions = [];
-      marketTotalCount = 0;
-      marketTotalPages = 0;
-    } finally {
-      marketLoading = false;
-      if (state.category === 'market') { render(); focusSelectedMarketRegion(); }
+      /* Go Live 또는 파일 직접 열기에서는 기존 시연 데이터를 유지합니다. */
     }
   }
 
@@ -1531,152 +987,35 @@
     state.selected = null;
     state.bounds = null;
     state.favoritesOnly = false;
-    state.deal = 'sale';
+    state.deal = 'all';
     state.room = 'all';
-    state.query = '';
-    state.sido = 'all';
-    state.region = '';
-    state.maxPrice = null;
-    state.minArea = null;
-    state.maxArea = null;
-    state.includeStudy = true;
-    document.getElementById('listingQuery').value = '';
-    document.getElementById('listingSido').value = 'all';
-    document.getElementById('listingRegion').value = '';
-    document.getElementById('listingMaxPrice').value = '';
-    document.getElementById('listingMinArea').value = '';
-    document.getElementById('listingMaxArea').value = '';
-    document.getElementById('roomFilter').value = 'all';
-    ['listingParking','listingElevator','listingPet'].forEach(function (id) { document.getElementById(id).checked = false; });
-    document.getElementById('listingIncludeStudy').checked = true;
-    document.getElementById('listingFilters').hidden = category === 'market';
-    document.getElementById('dealFilters').hidden = category === 'public';
-    document.getElementById('marketFilters').hidden = category !== 'market';
-    document.getElementById('searchSummary').hidden = true;
     document.body.classList.toggle('public-category', category === 'public');
-    document.body.classList.toggle('market-category', category === 'market');
-    document.body.classList.toggle('house-category', category === 'house');
-    document.body.classList.remove('recommended-category');
-    document.querySelectorAll('[data-personal-view]').forEach(function (button) { button.classList.remove('active'); });
     document.querySelectorAll('[data-property-category]').forEach(function (button) {
-      const active = button.dataset.propertyCategory === category || (button.dataset.propertyCategory === 'general' && category === 'market');
+      const active = button.dataset.propertyCategory === category;
       button.classList.toggle('active', active);
       button.setAttribute('aria-pressed', String(active));
     });
-    document.querySelectorAll('[data-apartment-category]').forEach(function (button) {
-      button.classList.toggle('active', button.dataset.apartmentCategory === category);
-    });
-    document.querySelectorAll('[data-deal]').forEach(function (button) {
-      button.classList.toggle('active', category !== 'market' && button.dataset.deal === state.deal);
-    });
-    updateDealSearchLabels();
-    document.getElementById('locationLabel').textContent = category === 'market' ? '아파트 매매 신고자료' : (category === 'public' ? '전국 LH 모집공고' : (category === 'house' ? '일반주택 매물' : '아파트 매물'));
-    document.getElementById('categoryScope').innerHTML = '<i class="fa-solid fa-location-dot"></i> ' +
-      (category === 'market' ? '서울·경기 지역 제공' : (category === 'public' ? '전국 LH 공고 제공' : '등록 지역 매물 제공'));
-    document.getElementById('listingQueryLabel').textContent = category === 'public' ? '공고명·지역·주택유형' : (category === 'house' ? '주택명·지역·주소' : '아파트명·지역·주소');
-    document.getElementById('listingQuery').placeholder = category === 'public' ? 'LH 공고 검색어를 입력하세요' : '검색어를 입력하세요';
-    document.getElementById('listingRegisterLink').href = category === 'house' ? '/properties/register?buildingType=주택' : '/properties/register?buildingType=아파트';
-    document.getElementById('listingUnit').textContent = category === 'public' ? '개의 모집공고가 있어요' : (category === 'market' ? '건의 실거래가가 있어요' : '개의 방을 찾았어요');
+    document.getElementById('locationLabel').textContent = '경기도 전체';
+    document.getElementById('listingUnit').textContent = category === 'public' ? '개의 모집공고가 있어요' : '개의 방을 찾았어요';
     document.getElementById('listingNotice').innerHTML = category === 'public'
       ? '<span>LH</span><p><strong>공식 모집공고</strong> 기준이며 신청 전 원문에서 자격과 일정을 확인하세요.</p><a href="https://apply.lh.or.kr/" target="_blank" rel="noopener noreferrer">LH 청약플러스</a>'
-      : (category === 'market'
-        ? '<span>₩</span><p><strong>국토교통부 신고자료</strong>이며 현재 매물의 호가와 다를 수 있습니다.</p><a href="https://rt.molit.go.kr/" target="_blank" rel="noopener noreferrer">실거래가 공개시스템</a>'
-        : '<span>✓</span><p><strong>등록 매물</strong>의 출처와 최종 확인일을 꼭 확인하세요.</p><a href="/defense/result">안전 확인</a>');
+      : '<span>✓</span><p><strong>등록 매물</strong>의 출처와 최종 확인일을 꼭 확인하세요.</p><a href="templates/defense/fraud_result.html">안전 확인</a>';
     clearMarkerMap(propertyMarkers);
     clearMarkerMap(aggregateMarkers);
     propertyMarkers.clear();
     aggregateMarkers.clear();
-    properties = category === 'public' ? publicProperties : (category === 'market' ? [] : generalProperties);
-    if (category !== 'market') populateListingRegions();
+    properties = category === 'public' ? publicProperties : generalProperties;
     detail.classList.remove('open');
     detail.setAttribute('aria-hidden', 'true');
     initialMapFitDone = false;
     render();
     if (category === 'public') loadPublicHousing();
-    else if (category === 'market') loadMarketTransactions();
     else fitDisplayedProperties();
   }
-
-  function switchPersonalView(view) {
-    const favoritesView = view === 'favorites';
-    state.category = favoritesView ? 'favorites' : 'recommended';
-    state.deal = 'all';
-    state.includeStudy = true;
-    state.query = '';
-    state.sido = 'all';
-    state.region = '';
-    state.favoritesOnly = favoritesView;
-    state.bounds = null;
-    state.selected = null;
-    properties = generalProperties;
-    document.body.classList.add('recommended-category');
-    document.body.classList.remove('public-category', 'market-category', 'house-category');
-    document.getElementById('dealFilters').hidden = true;
-    document.getElementById('listingFilters').hidden = true;
-    document.getElementById('marketFilters').hidden = true;
-    document.getElementById('searchSummary').hidden = true;
-    document.querySelectorAll('[data-property-category]').forEach(function (button) {
-      button.classList.remove('active');
-      button.setAttribute('aria-pressed', 'false');
-    });
-    document.querySelectorAll('[data-personal-view]').forEach(function (button) {
-      button.classList.toggle('active', button.dataset.personalView === view);
-    });
-    document.getElementById('locationLabel').textContent = favoritesView ? '내가 찜한 매물' : '서울·경기 추천';
-    document.getElementById('listingUnit').textContent = favoritesView ? '개의 찜한 매물이 있어요' : '개의 추천 매물이 있어요';
-    document.getElementById('listingNotice').innerHTML = favoritesView
-      ? '<span>♥</span><p><strong>찜한 매물</strong>은 로그인 계정에 안전하게 저장됩니다.</p><a href="/properties/favorites">전체 화면</a>'
-      : '<span>★</span><p><strong>ZipAI 추천 매물</strong>을 먼저 둘러보고 원하는 유형을 선택해 검색하세요.</p><a href="/defense/result">안전 확인</a>';
-    clearMarkerMap(propertyMarkers);
-    clearMarkerMap(aggregateMarkers);
-    propertyMarkers.clear();
-    aggregateMarkers.clear();
-    detail.classList.remove('open');
-    detail.setAttribute('aria-hidden', 'true');
-    initialMapFitDone = false;
-    render();
-    fitDisplayedProperties();
-  }
-
-  document.getElementById('personalViewBar').addEventListener('click', function (event) {
-    const button = event.target.closest('[data-personal-view]');
-    if (button) switchPersonalView(button.dataset.personalView);
-  });
 
   document.querySelectorAll('[data-property-category]').forEach(function (button) {
     button.addEventListener('click', function () { switchCategory(this.dataset.propertyCategory); });
   });
-  document.querySelectorAll('[data-apartment-category]').forEach(function (button) {
-    button.addEventListener('click', function () { switchCategory(this.dataset.apartmentCategory); });
-  });
-
-  document.getElementById('marketSido').addEventListener('change', function () {
-    populateMarketRegions();
-    marketBounds = null;
-    focusSelectedMarketRegion();
-  });
-  document.getElementById('marketRegion').addEventListener('change', function () {
-    marketBounds = null;
-    focusSelectedMarketRegion();
-  });
-  document.getElementById('marketFilterApply').addEventListener('click', function () {
-    state.query = document.getElementById('marketQuery').value.trim();
-    marketPage = 0;
-    marketBounds = null;
-    document.getElementById('marketFilters').hidden = true;
-    updateSearchSummary();
-    loadMarketTransactions(true);
-  });
-  document.getElementById('marketPagination').addEventListener('click', function (event) {
-    const button = event.target.closest('[data-market-page]');
-    if (!button || button.disabled) return;
-    marketPage = Number(button.dataset.marketPage);
-    loadMarketTransactions(true);
-    document.getElementById('listingPanel').scrollTo({ top: 0, behavior: 'smooth' });
-  });
-  populateMarketRegions();
-  document.querySelector('#marketDetailModal .market-detail-close').addEventListener('click', function () { closeSheet(document.getElementById('marketDetailModal')); });
-  document.getElementById('marketDetailModal').addEventListener('click', function (event) { if (event.target === this) closeSheet(this); });
 
   const openListingRegistration = document.getElementById('openListingRegistration');
   if (openListingRegistration) {
@@ -1687,19 +1026,6 @@
   }
   listingRegistrationModal.querySelector('.registration-close').addEventListener('click', function () { closeSheet(listingRegistrationModal); });
   listingRegistrationModal.addEventListener('click', function (event) { if (event.target === listingRegistrationModal) closeSheet(listingRegistrationModal); });
-  async function resolveRentalAddress(city, detailAddress) {
-    const query = ('경기도 ' + city + ' ' + detailAddress).replace(/\s+/g, ' ').trim();
-    const response = await fetch('/api/safety/geocode?query=' + encodeURIComponent(query), { credentials: 'same-origin' });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.message || '주소 좌표를 확인하지 못했습니다.');
-    const location = payload.location || {};
-    const lat = Number(location.latitude == null ? location.lat : location.latitude);
-    const lng = Number(location.longitude == null ? location.lng : location.longitude);
-    const resolvedAddress = String(location.address || location.roadAddress || query).trim();
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) throw new Error('주소의 정확한 좌표를 찾지 못했습니다. 지번이나 도로명까지 입력해 주세요.');
-    if (lat < 36.82 || lat > 38.32 || lng < 126.30 || lng > 127.86) throw new Error('경기도 안의 주소만 등록할 수 있습니다.');
-    return { address: resolvedAddress, lat: lat, lng: lng };
-  }
   document.getElementById('listingRegistrationForm').addEventListener('submit', async function (event) {
     event.preventDefault();
     if (!window.ZipaiAuth || !window.ZipaiAuth.getUser()) {
@@ -1709,14 +1035,11 @@
     }
     const form = new FormData(this);
     const city = String(form.get('city') || '');
-    if (!cityCenters[city]) {
+    const center = cityCenters[city];
+    if (!center) {
       showToast('경기도 시·군을 선택해 주세요.');
       return;
     }
-    const detailAddress = String(form.get('neighborhood') || '').trim();
-    let resolved;
-    try { resolved = await resolveRentalAddress(city, detailAddress); }
-    catch (error) { showToast(error.message); return; }
     const today = new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium' }).format(new Date());
     const registered = {
       id: Date.now(),
@@ -1728,8 +1051,7 @@
       maintenance: 0,
       area: Number(form.get('area') || 0),
       floor: String(form.get('floor') || '-'),
-      address: resolved.address,
-      sido: '경기도',
+      address: '경기도 ' + city + ' ' + String(form.get('neighborhood') || '').trim(),
       walk: '등록자 문의',
       tags: ['직접등록', city, form.get('deal') === 'jeonse' ? '전세' : '월세'],
       options: [],
@@ -1739,10 +1061,10 @@
       safe: 80,
       photos: 0,
       tone: Date.now() % 5 + 1,
-      lat: resolved.lat,
-      lng: resolved.lng,
+      lat: center[0],
+      lng: center[1],
       district: city,
-      neighborhood: detailAddress,
+      neighborhood: String(form.get('neighborhood') || city),
       source: '직접 등록 · 검증 전',
       verifiedAt: today,
       contact: String(form.get('contact') || '')
@@ -1763,15 +1085,21 @@
       return;
     }
     Object.assign(registered, serverRegistered);
+    const stored = getRegisteredProperties();
+    stored.unshift(registered);
+    localStorage.setItem('zipaiGyeonggiProperties', JSON.stringify(stored));
     generalProperties = [registered].concat(generalProperties);
     this.reset();
     closeSheet(listingRegistrationModal);
     switchCategory('general');
-    showToast('주소 좌표를 확인해 경기도 일반 매물을 등록했어요.');
+    showToast('경기도 일반 매물이 등록됐어요. 운영 전 중개사 검증이 필요합니다.');
   });
 
+  if (window.location.hash === '#saved-homes' && favorites.length && savedHomesButton) {
+    state.favoritesOnly = true;
+    savedHomesButton.classList.add('active');
+    savedHomesButton.setAttribute('aria-pressed', 'true');
+  }
   if (window.location.hash === '#register-listing' && window.ZipaiAuth && window.ZipaiAuth.getUser()) openSheet(listingRegistrationModal);
-  initMap(); saveFavorites(false); render(); updateFilterBadge();
-  loadServerSaleProperties();
-  initializePersonalViews();
+  initMap(); saveFavorites(false); render(); updateFilterBadge(); loadAdminExcelProperties(); loadServerFavorites();
 })();

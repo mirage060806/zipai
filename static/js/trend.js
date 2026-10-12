@@ -1,14 +1,8 @@
 document.addEventListener('DOMContentLoaded', function() {
-    function escapeHtml(value) {
-        return String(value == null ? '' : value)
-            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-    }
-
     // 1. 맞춤 대출 찾기 로직
     const filterForm = document.getElementById('loanFilterForm');
     if (filterForm) {
-        let loanProducts = [
+        const loanProducts = [
             // 구입 자금
             {
                 name: '내집마련 디딤돌 대출',
@@ -78,34 +72,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         ];
 
-        filterForm.addEventListener('submit', async function(e) {
+        filterForm.addEventListener('submit', function(e) {
             e.preventDefault();
             const target = document.getElementById('targetType').value;
             const purpose = document.getElementById('loanPurpose').value;
             const resultBox = document.getElementById('filterResults');
-
-            try {
-                const response = await fetch('/api/finance/policies?category=' + encodeURIComponent(purpose), {
-                    credentials: 'same-origin'
-                });
-                if (!response.ok) throw new Error('금융정책을 불러오지 못했습니다.');
-                const policies = await response.json();
-                loanProducts = policies.map(function(policy) {
-                    return {
-                        name: policy.name,
-                        purpose: policy.category,
-                        targets: [policy.targetType],
-                        limit: policy.limitInfo,
-                        rate: policy.rateInfo,
-                        desc: policy.description,
-                        checkedAt: policy.sourceCheckedAt,
-                        updateStatus: policy.updateStatus
-                    };
-                });
-            } catch (error) {
-                resultBox.innerHTML = '<div style="text-align:center; color:#b42318; padding:40px;"><strong>' + error.message + '</strong><br><span style="font-size:0.9rem;">잠시 후 다시 시도해 주세요.</span></div>';
-                return;
-            }
             
             // Filter logic
             const matched = loanProducts.filter(p => {
@@ -128,18 +99,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 resultBox.innerHTML = matched.map(product => `
                     <div class="result-item" style="border-left: 4px solid var(--primary-color); margin-bottom: 20px; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
                         <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h4 style="color: var(--accent-color); font-weight: 700; margin: 0; font-size:1.1rem;">${escapeHtml(product.name)}</h4>
+                            <h4 style="color: var(--accent-color); font-weight: 700; margin: 0; font-size:1.1rem;">${product.name}</h4>
                             <span class="badge ${product.targets.includes(target) ? 'bg-primary' : 'bg-secondary'}" style="font-size: 0.75rem; padding: 4px 8px;">
                                 ${product.targets.includes(target) ? '맞춤 상품' : '지원 가능'}
                             </span>
                         </div>
-                        <p style="color: #666; font-size: 0.9rem; margin-bottom: 12px; line-height: 1.5;">${escapeHtml(product.desc)}</p>
+                        <p style="color: #666; font-size: 0.9rem; margin-bottom: 12px; line-height: 1.5;">${product.desc}</p>
                         <div class="d-flex flex-wrap gap-3" style="font-size: 0.85rem; color: #555; background: var(--bg-light); padding: 10px 15px; border-radius: 6px; margin-bottom: 12px;">
-                            <div style="flex: 1; min-width: 200px;"><strong>한도:</strong> ${escapeHtml(product.limit)}</div>
-                            <div style="flex: 1; min-width: 150px;"><strong>금리:</strong> ${escapeHtml(product.rate)}</div>
+                            <div style="flex: 1; min-width: 200px;"><strong>한도:</strong> ${product.limit}</div>
+                            <div style="flex: 1; min-width: 150px;"><strong>금리:</strong> ${product.rate}</div>
                         </div>
-                        <a href="/board/finance-policy?category=${encodeURIComponent(product.purpose)}&targetType=${encodeURIComponent(product.targets.includes(target) ? target : 'general')}" style="color: var(--primary-color); font-weight: bold; text-decoration: none; font-size: 0.85rem;">자세히 보기 &rarr;</a>
-                        ${product.checkedAt ? `<small style="display:block; margin-top:8px; color:#6c757d;">공식 출처 확인: ${new Date(product.checkedAt).toLocaleDateString('ko-KR')}${product.updateStatus === 'review' ? ' · 변경 검토 중' : ''}</small>` : ''}
+                        <a href="#" style="color: var(--primary-color); font-weight: bold; text-decoration: none; font-size: 0.85rem;">자세히 보기 &rarr;</a>
                     </div>
                 `).join('');
             } else {
@@ -191,42 +161,72 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // 폼 제출 이벤트 핸들러
-        calcForm.addEventListener('submit', async function(e) {
+        calcForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            const principalInput = parseFloat(document.getElementById('principal').value);
+            const principal = parseFloat(document.getElementById('principal').value) * 10000;
             const baseRate = parseFloat(document.getElementById('rate').value) || 0;
             const term = parseInt(document.getElementById('term').value);
             const repayType = document.getElementById('repayType').value;
-            const request = {
-                principal: Math.round(principalInput),
-                baseRate: baseRate,
-                termYears: term,
-                repayType: repayType,
-                chkSubscription: Boolean(document.getElementById('chkSubscription').checked),
-                chkMultiChildren: Boolean(document.getElementById('chkMultiChildren').checked),
-                chkNewborn: Boolean(document.getElementById('chkNewborn').checked),
-                chkElectronic: Boolean(document.getElementById('chkElectronic').checked)
-            };
-            let calculation;
-            try {
-                const response = await fetch('/api/finance/calculate', {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(request)
+            const months = term * 12;
+
+            // 최종 적용 금리 계산 (우대금리 반영)
+            let discount = 0;
+            document.querySelectorAll('.rate-discount:checked').forEach(cb => {
+                discount += parseFloat(cb.value);
+            });
+            const finalRatePercent = Math.max(0.1, baseRate - discount);
+            const rate = (finalRatePercent / 100) / 12;
+
+            let balance = principal;
+            let totalInterest = 0;
+            const schedule = [];
+
+            for (let m = 1; m <= months; m++) {
+                let interest = 0;
+                let principalPaid = 0;
+                let totalPaid = 0;
+
+                if (repayType === 'level-both') {
+                    // 원리금균등상환
+                    if (rate > 0) {
+                        totalPaid = (principal * rate * Math.pow(1 + rate, months)) / (Math.pow(1 + rate, months) - 1);
+                        interest = balance * rate;
+                        principalPaid = totalPaid - interest;
+                    } else {
+                        totalPaid = principal / months;
+                        interest = 0;
+                        principalPaid = totalPaid;
+                    }
+                } else if (repayType === 'level-principal') {
+                    // 원금균등상환
+                    principalPaid = principal / months;
+                    interest = balance * rate;
+                    totalPaid = principalPaid + interest;
+                } else if (repayType === 'bullet') {
+                    // 원금만기일시상환
+                    interest = balance * rate;
+                    if (m === months) {
+                        principalPaid = principal;
+                    } else {
+                        principalPaid = 0;
+                    }
+                    totalPaid = principalPaid + interest;
+                }
+
+                balance = Math.max(0, balance - principalPaid);
+                totalInterest += interest;
+
+                schedule.push({
+                    month: m,
+                    principalPaid: Math.round(principalPaid),
+                    interest: Math.round(interest),
+                    totalPaid: Math.round(totalPaid),
+                    balance: Math.round(balance)
                 });
-                const payload = await response.json().catch(function() { return {}; });
-                if (!response.ok) throw new Error(payload.message || '계산을 처리하지 못했습니다.');
-                calculation = payload;
-            } catch (error) {
-                alert(error.message);
-                return;
             }
-            const principal = Number(calculation.totalPrincipal);
-            const totalInterest = Number(calculation.totalInterest);
-            const totalRepayment = Number(calculation.totalRepayment);
-            const firstMonthVal = Number(calculation.firstMonthAmount);
-            const schedule = calculation.schedule || [];
+
+            const totalRepayment = Math.round(principal + totalInterest);
+            const firstMonthVal = schedule[0].totalPaid;
 
             // 결과 화면 업데이트
             document.getElementById('calcResultVal').textContent = firstMonthVal.toLocaleString('ko-KR') + ' 원';

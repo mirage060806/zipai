@@ -25,32 +25,22 @@
       return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char];
     });
   }
-  function formatDate(value, withTime) {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '날짜 정보 없음';
-    return new Intl.DateTimeFormat('ko-KR', withTime
-      ? { dateStyle: 'medium', timeStyle: 'short' }
-      : { dateStyle: 'long' }).format(date);
-  }
   let post;
   if (source === 'server') {
     try { post = (await api('/api/community/posts/' + id)).item; }
-    catch (error) { showToast(error.message); setTimeout(function () { location.replace('/board/community'); }, 900); return; }
+    catch (error) { showToast(error.message); setTimeout(function () { location.replace('community.html'); }, 900); return; }
   } else post = (window.ZipaiCommunitySamples || []).find(function (item) { return item.id === id; });
-  if (!post) return location.replace('/board/community');
+  if (!post) return location.replace('community.html');
   const labels = { review: '주거 후기', tip: '생활 정보', question: '질문', free: '자유게시판' };
   gate.hidden = true; section.hidden = false;
   const category = document.getElementById('detailCategory');
-  category.textContent = labels[post.category] || '게시글';
-  category.classList.add(labels[post.category] ? post.category : 'free');
+  category.textContent = labels[post.category] || '게시글'; category.classList.add(post.category);
   document.getElementById('detailTitle').textContent = post.title;
   document.getElementById('detailAuthor').textContent = post.author;
-  document.getElementById('detailDate').textContent = formatDate(post.createdAt, false);
+  document.getElementById('detailDate').textContent = new Intl.DateTimeFormat('ko-KR', { dateStyle: 'long' }).format(new Date(post.createdAt));
   document.getElementById('detailArea').textContent = post.area || '';
   document.getElementById('detailArea').hidden = !post.area;
   document.getElementById('detailRating').textContent = post.category === 'review' ? '★'.repeat(Number(post.rating || 0)) + '☆'.repeat(5 - Number(post.rating || 0)) : '';
-  const detailImage = document.getElementById('detailImage');
-  if (post.imageUrl) { detailImage.src = post.imageUrl; detailImage.hidden = false; }
   document.getElementById('detailContent').textContent = post.content;
   document.getElementById('detailLikes').textContent = post.likes || 0;
   document.getElementById('detailViews').textContent = post.views || 0;
@@ -65,18 +55,6 @@
       likeButton.classList.add('is-liked'); likeButton.disabled = true; showToast('게시글에 공감했습니다.');
     } catch (error) { showToast(error.message); }
   });
-  const reportButton = document.getElementById('detailReport');
-  reportButton.disabled = source !== 'server';
-  reportButton.addEventListener('click', async function () {
-    if (source !== 'server') return;
-    const reason = window.prompt('신고 사유를 입력해 주세요.', '부적절한 내용');
-    if (reason === null) return;
-    try {
-      const payload = await api('/api/community/posts/' + id + '/report', { method: 'POST', body: JSON.stringify({ reason: reason }) });
-      reportButton.disabled = true;
-      showToast(payload.isBlinded ? '신고가 접수되어 게시글이 블라인드 처리되었습니다.' : '신고가 접수되었습니다.');
-    } catch (error) { showToast(error.message); }
-  });
   const commentsSection = document.getElementById('commentSection');
   if (source !== 'server') {
     commentsSection.innerHTML = '<p class="activity-empty">예시 게시글에는 댓글을 작성할 수 없습니다.</p>';
@@ -88,7 +66,7 @@
     document.getElementById('commentCount').textContent = items.length;
     commentList.innerHTML = items.length ? items.map(function (item) {
       return '<article class="community-comment"><strong>' + escapeHtml(item.author) + '</strong><p>' + escapeHtml(item.content) +
-        '</p><time>' + formatDate(item.createdAt, true) +
+        '</p><time>' + new Intl.DateTimeFormat('ko-KR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(item.createdAt)) +
         '</time></article>';
     }).join('') : '<p class="activity-empty">첫 댓글을 남겨보세요.</p>';
   }

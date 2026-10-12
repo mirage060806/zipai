@@ -2,18 +2,18 @@
   'use strict';
 
   const questions = [
-    { step: 0, title: '등기부등본을 직접 발급해 확인했나요?', help: '인터넷등기소 또는 등기소에서 계약 직전 발급본을 확인하세요.', action: '최신 등기부등본을 발급해 소유권과 근저당을 확인하세요.', link: '/defense/guide', options: [['확인했어요','safe'],['아직이에요','danger'],['잘 모르겠어요','caution']] },
-    { step: 0, title: '계약 상대방이 등기부상 소유자와 일치하나요?', help: '대리인이라면 위임장과 인감증명서가 필요해요.', action: '계약 상대방의 신분과 적법한 대리권을 다시 확인하세요.', link: '/defense/guide', options: [['일치해요','safe'],['일치하지 않아요','danger'],['확인 전이에요','caution']] },
-    { step: 0, title: '주변 매매 시세와 전세가율을 확인했나요?', help: '같은 면적의 최근 실거래가를 2곳 이상에서 비교하세요.', action: '실거래가를 바탕으로 전세가율을 계산해 보세요.', link: '/defense/calculator', options: [['확인했어요','safe'],['확인 안 했어요','danger'],['시세가 불분명해요','caution']] },
-    { step: 0, title: '임대인의 국세·지방세 체납 여부를 확인했나요?', help: '체납 세금은 보증금보다 먼저 변제될 수 있어요.', action: '임대인에게 국세·지방세 납세증명서를 요청하세요.', link: '/defense/guide', options: [['확인했어요','safe'],['체납이 있어요','danger'],['확인 전이에요','caution']] },
-    { step: 1, title: '계약 당일 등기부등본을 다시 확인했나요?', help: '그 사이 새 근저당이나 압류가 생겼는지 살펴보세요.', action: '계약서 작성 직전 등기부등본을 한 번 더 발급하세요.', link: '/defense/guide', options: [['확인했어요','safe'],['변동이 있어요','danger'],['확인 전이에요','caution']] },
-    { step: 1, title: '전세대출·보증보험 불가 시 반환 특약이 있나요?', help: '목적물 문제로 가입이 거절되면 계약금을 돌려받는 내용이에요.', action: '대출·보증보험 가입 불가 시 계약금 반환 특약을 넣으세요.', link: '/defense/guide', options: [['있어요','safe'],['없어요','danger'],['협의 중이에요','caution']] },
-    { step: 1, title: '잔금 다음 날까지 권리관계 유지 특약이 있나요?', help: '임대인이 잔금 직후 근저당을 설정하는 위험을 줄여요.', action: '잔금일 다음 날까지 권리관계를 유지하는 특약을 넣으세요.', link: '/defense/guide', options: [['있어요','safe'],['없어요','danger'],['잘 모르겠어요','caution']] },
-    { step: 1, title: '중개업소 등록과 공제증서를 확인했나요?', help: '등록된 공인중개사인지, 보증 한도는 얼마인지 확인하세요.', action: '중개사무소 등록증과 공제증서를 확인하세요.', link: '/defense/guide', options: [['확인했어요','safe'],['미등록이에요','danger'],['확인 전이에요','caution']] },
-    { step: 2, title: '잔금 직전 등기부등본에 변동이 없나요?', help: '잔금을 보내기 전 마지막으로 권리변동을 확인하세요.', action: '잔금 송금 전 등기부등본 변동 여부를 확인하세요.', link: '/defense/guide', options: [['변동 없어요','safe'],['변동이 있어요','danger'],['확인 전이에요','caution']] },
-    { step: 2, title: '보증금을 소유자 명의 계좌로 송금하나요?', help: '제3자 계좌는 정당한 사유와 증빙을 꼭 확인해야 해요.', action: '등기부상 소유자 명의 계좌인지 확인한 뒤 송금하세요.', link: '/defense/guide', options: [['소유자 계좌예요','safe'],['제3자 계좌예요','danger'],['아직 몰라요','caution']] },
-    { step: 2, title: '입주 당일 전입신고와 확정일자가 가능한가요?', help: '대항력과 우선변제권을 갖추기 위한 핵심 절차예요.', action: '입주 즉시 전입신고를 하고 확정일자를 받으세요.', link: '/defense/guide', options: [['가능해요','safe'],['불가능해요','danger'],['확인 전이에요','caution']] },
-    { step: 2, title: '전세보증금 반환보증 가입 가능 여부를 확인했나요?', help: '가입 기관마다 주택 가격과 보증금 요건이 달라요.', action: '계약 초기에 반환보증 가입 가능 여부를 확인하세요.', link: '/defense/guide', options: [['가입 가능해요','safe'],['가입 불가해요','danger'],['확인 전이에요','caution']] }
+    { step: 0, title: '등기부등본을 직접 발급해 확인했나요?', help: '인터넷등기소 또는 등기소에서 계약 직전 발급본을 확인하세요.', action: '최신 등기부등본을 발급해 소유권과 근저당을 확인하세요.', link: 'contract-guide.html', options: [['확인했어요','safe'],['아직이에요','danger'],['잘 모르겠어요','caution']] },
+    { step: 0, title: '계약 상대방이 등기부상 소유자와 일치하나요?', help: '대리인이라면 위임장과 인감증명서가 필요해요.', action: '계약 상대방의 신분과 적법한 대리권을 다시 확인하세요.', link: 'contract-guide.html', options: [['일치해요','safe'],['일치하지 않아요','danger'],['확인 전이에요','caution']] },
+    { step: 0, title: '주변 매매 시세와 전세가율을 확인했나요?', help: '같은 면적의 최근 실거래가를 2곳 이상에서 비교하세요.', action: '실거래가를 바탕으로 전세가율을 계산해 보세요.', link: 'charter-rate-calculator.html', options: [['확인했어요','safe'],['확인 안 했어요','danger'],['시세가 불분명해요','caution']] },
+    { step: 0, title: '임대인의 국세·지방세 체납 여부를 확인했나요?', help: '체납 세금은 보증금보다 먼저 변제될 수 있어요.', action: '임대인에게 국세·지방세 납세증명서를 요청하세요.', link: 'contract-guide.html', options: [['확인했어요','safe'],['체납이 있어요','danger'],['확인 전이에요','caution']] },
+    { step: 1, title: '계약 당일 등기부등본을 다시 확인했나요?', help: '그 사이 새 근저당이나 압류가 생겼는지 살펴보세요.', action: '계약서 작성 직전 등기부등본을 한 번 더 발급하세요.', link: 'contract-guide.html', options: [['확인했어요','safe'],['변동이 있어요','danger'],['확인 전이에요','caution']] },
+    { step: 1, title: '전세대출·보증보험 불가 시 반환 특약이 있나요?', help: '목적물 문제로 가입이 거절되면 계약금을 돌려받는 내용이에요.', action: '대출·보증보험 가입 불가 시 계약금 반환 특약을 넣으세요.', link: 'contract-guide.html', options: [['있어요','safe'],['없어요','danger'],['협의 중이에요','caution']] },
+    { step: 1, title: '잔금 다음 날까지 권리관계 유지 특약이 있나요?', help: '임대인이 잔금 직후 근저당을 설정하는 위험을 줄여요.', action: '잔금일 다음 날까지 권리관계를 유지하는 특약을 넣으세요.', link: 'contract-guide.html', options: [['있어요','safe'],['없어요','danger'],['잘 모르겠어요','caution']] },
+    { step: 1, title: '중개업소 등록과 공제증서를 확인했나요?', help: '등록된 공인중개사인지, 보증 한도는 얼마인지 확인하세요.', action: '중개사무소 등록증과 공제증서를 확인하세요.', link: 'contract-guide.html', options: [['확인했어요','safe'],['미등록이에요','danger'],['확인 전이에요','caution']] },
+    { step: 2, title: '잔금 직전 등기부등본에 변동이 없나요?', help: '잔금을 보내기 전 마지막으로 권리변동을 확인하세요.', action: '잔금 송금 전 등기부등본 변동 여부를 확인하세요.', link: 'contract-guide.html', options: [['변동 없어요','safe'],['변동이 있어요','danger'],['확인 전이에요','caution']] },
+    { step: 2, title: '보증금을 소유자 명의 계좌로 송금하나요?', help: '제3자 계좌는 정당한 사유와 증빙을 꼭 확인해야 해요.', action: '등기부상 소유자 명의 계좌인지 확인한 뒤 송금하세요.', link: 'contract-guide.html', options: [['소유자 계좌예요','safe'],['제3자 계좌예요','danger'],['아직 몰라요','caution']] },
+    { step: 2, title: '입주 당일 전입신고와 확정일자가 가능한가요?', help: '대항력과 우선변제권을 갖추기 위한 핵심 절차예요.', action: '입주 즉시 전입신고를 하고 확정일자를 받으세요.', link: 'contract-guide.html', options: [['가능해요','safe'],['불가능해요','danger'],['확인 전이에요','caution']] },
+    { step: 2, title: '전세보증금 반환보증 가입 가능 여부를 확인했나요?', help: '가입 기관마다 주택 가격과 보증금 요건이 달라요.', action: '계약 초기에 반환보증 가입 가능 여부를 확인하세요.', link: 'contract-guide.html', options: [['가입 가능해요','safe'],['가입 불가해요','danger'],['확인 전이에요','caution']] }
   ];
 
   const form = document.getElementById('checklistForm');
@@ -75,7 +75,7 @@
     }).filter(Boolean).sort(function (a, b) { return a.level === b.level ? 0 : a.level === 'danger' ? -1 : 1; });
     safeStorage.set('zipdosoChecklistResult', { answers: answers, counts: counts, score: score, risks: risks, savedAt: new Date().toISOString() });
     safeStorage.set('zipdosoChecklistDraft', answers);
-    window.location.href = '/defense/result';
+    window.location.href = 'fraud_result.html';
   }
 
   createQuestions();
