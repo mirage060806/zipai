@@ -32,6 +32,8 @@ Thumbs.db
 /study_file/
 *.md
 *.txt
+!doc/
+!doc/*.md
 !requirements.txt
 !rpa/requirements-*.txt
 
