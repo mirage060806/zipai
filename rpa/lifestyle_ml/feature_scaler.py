@@ -12,6 +12,8 @@ def validate_weights(weights: list[float] | np.ndarray) -> np.ndarray:
     values = np.asarray(weights, dtype=float)
     if values.shape != (len(FEATURE_COLUMNS),):
         raise ValueError(f"가중치는 {len(FEATURE_COLUMNS)}개가 필요합니다.")
+    if not np.all(np.isfinite(values)):
+        raise ValueError("가중치는 유한한 숫자여야 합니다.")
     if np.any(values < 0) or np.any(values > 5):
         raise ValueError("가중치는 0~5 범위여야 합니다.")
     if np.all(values == 0):

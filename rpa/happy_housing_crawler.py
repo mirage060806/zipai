@@ -1,3 +1,8 @@
+from rpa_runtime import db_config, load_env, start_run, execute
+import argparse
+ACTIVE_HISTORY = None
+RUN_ERRORS = 0
+
 import csv
 import hashlib
 import json
@@ -3752,18 +3757,9 @@ def _read_spring_datasource_fallback():
 
 
 def get_db_config():
-    """DB 연결정보를 .env/환경변수 우선, Spring 설정 보조 순서로 읽는다."""
-    _load_dotenv_candidates()
-    spring = _read_spring_datasource_fallback()
-    enabled = os.getenv("ZIPAI_DB_ENABLED", "true").strip().lower() not in {"0", "false", "no", "off"}
-    return {
-        "enabled": enabled,
-        "host": os.getenv("ZIPAI_DB_HOST", spring.get("host", "localhost")),
-        "port": int(os.getenv("ZIPAI_DB_PORT", spring.get("port", 3306))),
-        "database": os.getenv("ZIPAI_DB_NAME", spring.get("database", "zipai")),
-        "user": os.getenv("ZIPAI_DB_USER", spring.get("user", "zipai")),
-        "password": os.getenv("ZIPAI_DB_PASSWORD", spring.get("password", "")),
-    }
+    config = db_config()
+    config['enabled'] = os.getenv('ZIPAI_DB_ENABLED', 'true').strip().lower() not in {'0','false','no','off'}
+    return config
 
 
 def ensure_crawler_tables(cursor):
@@ -3902,15 +3898,7 @@ def save_crawl_to_mysql(processed_results, started_at):
     conn = None
     cursor = None
     try:
-        conn = mysql.connect(
-            host=config["host"],
-            port=config["port"],
-            database=config["database"],
-            user=config["user"],
-            password=config["password"],
-            charset="utf8mb4",
-            autocommit=False,
-        )
+        conn = mysql.connect(**{k:v for k,v in config.items() if k != "enabled"})
         cursor = conn.cursor()
         ensure_crawler_tables(cursor)
 
@@ -3947,7 +3935,7 @@ def save_crawl_to_mysql(processed_results, started_at):
             notice_id_by_pan[item.get("pan_id")] = cursor.fetchone()[0]
 
         # 현재 수집 공고의 기존 규칙을 먼저 지워, 이전 버전/경로의 중복 규칙이 남지 않게 한다.
-        for notice_id in notice_id_by_pan.values():
+        for notice_id in (notice_id_by_pan.values() if not RUN_ERRORS else []):
             cursor.execute("DELETE FROM housing_notice_rule WHERE notice_id=%s", (notice_id,))
 
         rule_count = parsed_count = validation_count = 0
@@ -3979,9 +3967,9 @@ def save_crawl_to_mysql(processed_results, started_at):
             INSERT INTO crawl_history (
                 started_at, finished_at, status, notice_count, rule_count,
                 parsed_rule_count, validation_rule_count, raw_json_path, processed_json_path
-            ) VALUES (%s,%s,'SUCCESS',%s,%s,%s,%s,%s,%s)
+            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """, (
-            started_at, datetime.now(), len(processed_results), rule_count,
+            started_at, datetime.now(), "PARTIAL" if RUN_ERRORS else "SUCCESS", len(processed_results), rule_count,
             parsed_count, validation_count, str(RAW_JSON_PATH), str(PROCESSED_JSON_PATH),
         ))
 
@@ -4028,15 +4016,7 @@ def record_crawl_failure_to_mysql(started_at, error_message, notice_count=0):
     conn = None
     cursor = None
     try:
-        conn = mysql.connect(
-            host=config["host"],
-            port=config["port"],
-            database=config["database"],
-            user=config["user"],
-            password=config["password"],
-            charset="utf8mb4",
-            autocommit=False,
-        )
+        conn = mysql.connect(**{k:v for k,v in config.items() if k != "enabled"})
         cursor = conn.cursor()
         ensure_crawler_tables(cursor)
         cursor.execute("""
@@ -4068,13 +4048,16 @@ def record_crawl_failure_to_mysql(started_at, error_message, notice_count=0):
             conn.close()
 
 
-def main():
+def _main():
+    global RUN_ERRORS
     crawl_started_at = datetime.now()
     print()
     print("====================================")
     print("ZipAI 행복주택 크롤링 시작")
     print("====================================")
 
+    if PdfReader is None:
+        raise RuntimeError("pypdf를 설치한 뒤 다시 실행하세요.")
     session = create_session()
     raw_results = []
 
@@ -4087,6 +4070,8 @@ def main():
             raise RuntimeError("행복주택 공고를 찾지 못했습니다. LH 응답 또는 HTML 구조를 확인하세요.")
 
         total = len(list_notices)
+        if ACTIVE_HISTORY:
+            ACTIVE_HISTORY.emit(stage="collect")
 
         for index, notice in enumerate(
             list_notices,
@@ -4109,6 +4094,7 @@ def main():
                 )
 
             except requests.RequestException as error:
+                RUN_ERRORS += 1
                 print()
                 print(
                     f"[상세 접속 오류] {notice['title']}"
@@ -4134,6 +4120,7 @@ def main():
                 )
 
             except Exception as error:
+                RUN_ERRORS += 1
                 print()
                 print(
                     f"[상세 처리 오류] {notice['title']}"
@@ -4146,30 +4133,37 @@ def main():
 
         # 상세페이지 JavaScript에서 확인한 실제 다운로드 방식:
         # GET /lhapply/lhFile.do?fileid=...
-        download_pdf_files(
+        download_result = download_pdf_files(
             session,
             raw_results
         )
 
-        extract_downloaded_pdf_texts(
+        text_result = extract_downloaded_pdf_texts(
             raw_results
         )
 
-        extract_rule_sections_from_downloaded_pdfs(
+        section_result = extract_rule_sections_from_downloaded_pdfs(
             raw_results
         )
 
         # 현재 공고의 이전 rule_values JSON을 제거한 뒤 이번 실행 결과만 새로 생성한다.
         _reset_current_rule_value_folders(raw_results)
 
-        extract_all_youth_rule_values(
+        youth_result = extract_all_youth_rule_values(
             raw_results
         )
 
-        extract_remaining_rule_values(
+        remaining_result = extract_remaining_rule_values(
             raw_results
         )
 
+        RUN_ERRORS += download_result[1] + text_result[1] + section_result[2]
+        RUN_ERRORS += youth_result.get('failed_count', 0)
+        RUN_ERRORS += sum(value.get('failed', 0) for value in remaining_result.values())
+        if ACTIVE_HISTORY:
+            ACTIVE_HISTORY.emit(collected=len(raw_results), errors=RUN_ERRORS, stage='upload')
+        # 상세 접속 실패 공고는 기존 DB 정보를 빈 값으로 덮어쓰지 않습니다.
+        raw_results = [notice for notice in raw_results if not notice.get('crawl_error')]
         processed_results = [
             build_processed_notice(notice)
             for notice in raw_results
@@ -4237,7 +4231,7 @@ def main():
             "구간 진단 폴더:",
             DEBUG_DIR / "rule_heading_candidates"
         )
-        return 0
+        return 3 if RUN_ERRORS else 0
 
     except requests.RequestException as error:
         print()
@@ -4254,6 +4248,18 @@ def main():
     finally:
         session.close()
 
+
+def main():
+    global ACTIVE_HISTORY, RUN_ERRORS
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--trigger', choices=['manual','scheduled','unknown'], default='unknown')
+    args = parser.parse_args()
+    RUN_ERRORS = 0
+    ACTIVE_HISTORY = start_run('lh', args.trigger)
+    try:
+        return execute(ACTIVE_HISTORY, _main)
+    finally:
+        ACTIVE_HISTORY = None
 
 if __name__ == "__main__":
     sys.exit(main())

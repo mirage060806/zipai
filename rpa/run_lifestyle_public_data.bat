@@ -1,26 +1,12 @@
 @echo off
-setlocal
+setlocal EnableExtensions
+chcp 65001 >nul
+set "PYTHONUTF8=1"
+set "PYTHONIOENCODING=utf-8"
 cd /d "%~dp0"
-
-set "PYTHON_EXE=python"
-if exist ".venv\Scripts\python.exe" set "PYTHON_EXE=.venv\Scripts\python.exe"
-
-if "%ZIPAI_DB_PASSWORD%"=="" (
-  echo [INFO] ZIPAI_DB_PASSWORD environment variable is empty.
-  echo [INFO] If your MySQL user has a password, set it before running this file.
-)
-
-echo [1/2] Building normalized Lifestyle scores from official raw CSV files...
-"%PYTHON_EXE%" lifestyle_public_data_builder.py
-if errorlevel 1 goto :error
-
-echo [2/2] Importing normalized scores into MySQL...
-"%PYTHON_EXE%" lifestyle_score_importer.py
-if errorlevel 1 goto :error
-
-echo [OK] Lifestyle public-data pipeline finished.
-exit /b 0
-
-:error
-echo [ERROR] Lifestyle public-data pipeline failed. exit=%errorlevel%
-exit /b %errorlevel%
+set "PYTHON=python"
+if exist "..\.venv\Scripts\python.exe" set "PYTHON=..\.venv\Scripts\python.exe"
+set "TRIGGER=manual"
+if /i "%~1"=="scheduled" set "TRIGGER=scheduled"
+"%PYTHON%" lifestyle_pipeline.py --trigger "%TRIGGER%"
+exit /b %ERRORLEVEL%

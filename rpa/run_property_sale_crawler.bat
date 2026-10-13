@@ -4,6 +4,9 @@ chcp 65001 >nul
 set "PYTHONUTF8=1"
 set "PYTHONIOENCODING=utf-8"
 cd /d "%~dp0"
+set "TRIGGER=manual"
+if /i "%~1"=="scheduled" set "TRIGGER=scheduled"
+if /i "%~1"=="manual" set "TRIGGER=manual"
 
 if exist "..\.venv\Scripts\python.exe" (
   set "PYTHON=..\.venv\Scripts\python.exe"
@@ -28,23 +31,16 @@ if errorlevel 1 (
 )
 
 echo.>>"!LOG_FILE!"
-echo [%date% %time%] START scheduled property crawl>>"!LOG_FILE!"
+echo [%date% %time%] START property crawl trigger=!TRIGGER!>>"!LOG_FILE!"
 
-"!PYTHON!" property_sale_crawler.py --check >>"!LOG_FILE!" 2>&1
-set "EXITCODE=!ERRORLEVEL!"
-if not "!EXITCODE!"=="0" (
-  set "RESULT=ERROR preflight failed"
-  goto :FINISH
-)
-
-"!PYTHON!" property_sale_crawler.py --upload --resume >>"!LOG_FILE!" 2>&1
+"!PYTHON!" property_sale_crawler.py --upload --resume --preflight --trigger "!TRIGGER!" >>"!LOG_FILE!" 2>&1
 set "EXITCODE=!ERRORLEVEL!"
 if not "!EXITCODE!"=="0" (
   set "RESULT=ERROR crawler failed"
   goto :FINISH
 )
 
-set "RESULT=OK property crawl and import completed"
+set "RESULT=OK process completed; check history for SUCCESS or PARTIAL"
 
 :FINISH
 for /f %%I in ('powershell.exe -NoProfile -Command "[DateTimeOffset]::Now.ToUnixTimeSeconds()"') do set "END_SECONDS=%%I"

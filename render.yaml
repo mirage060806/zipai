@@ -1,20 +1,38 @@
 services:
   - type: web
-    name: zipai-api
+    name: zipai
     runtime: docker
     plan: free
     dockerfilePath: ./Dockerfile
-    healthCheckPath: /api/health
+    autoDeploy: false
     envVars:
-      - key: SERVER_HOST
-        value: 0.0.0.0
-      - key: COOKIE_SECURE
-        value: "true"
       - key: DB_URL
         sync: false
       - key: DB_USERNAME
         sync: false
       - key: DB_PASSWORD
         sync: false
-      - key: PUBLIC_DATA_SERVICE_KEY
+      - key: PROPERTY_IMPORT_TOKEN
         sync: false
+      - key: FINANCE_IMPORT_TOKEN
+        sync: false
+      - key: VWORLD_API_KEY
+        sync: false
+      - key: KAKAO_OAUTH_CLIENT_ID
+        sync: false
+      - key: KAKAO_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: KAKAO_OAUTH_CONFIGURED
+        value: "true"
+      - key: NAVER_OAUTH_CLIENT_ID
+        sync: false
+      - key: NAVER_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: NAVER_OAUTH_CONFIGURED
+        value: "true"
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_OAUTH_CONFIGURED
+        value: "true"

@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 import mysql.connector
+from rpa_runtime import db_config
 
 BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_CSV = BASE_DIR / "data" / "lifestyle" / "lifestyle_official_scores.csv"
@@ -28,15 +29,7 @@ def as_score(value):
 
 
 def connect_db():
-    return mysql.connector.connect(
-        host=env("ZIPAI_DB_HOST", "localhost"),
-        port=int(env("ZIPAI_DB_PORT", "3306")),
-        database=env("ZIPAI_DB_NAME", "zipai"),
-        user=env("ZIPAI_DB_USER", "zipai"),
-        password=env("ZIPAI_DB_PASSWORD", ""),
-        charset="utf8mb4",
-        autocommit=False,
-    )
+    return mysql.connector.connect(**db_config())
 
 
 def import_csv(path):
@@ -117,6 +110,7 @@ def import_csv(path):
 
         conn.commit()
         print(f"[OK] Lifestyle 공식/정규화 점수 {imported}건 반영")
+        return imported
     except Exception:
         conn.rollback()
         raise

@@ -9,7 +9,7 @@ echo Task  : %TASK_NAME%
 echo Time  : Monday 10:00
 echo Runner: %RUNNER%
 
-schtasks /Create /TN "%TASK_NAME%" /TR "\"%RUNNER%\"" /SC WEEKLY /D MON /ST 10:00 /F
+schtasks /Create /TN "%TASK_NAME%" /TR "\"%RUNNER%\" scheduled" /SC WEEKLY /D MON /ST 10:00 /F
 if errorlevel 1 (
   echo [FAILED] Scheduled task was not created.
   exit /b 1

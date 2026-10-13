@@ -18,37 +18,82 @@ public class CollectionHistoryService {
 
     public List<Map<String,Object>> categories() {
         return List.of(
-            Map.of("id","market","label","아파트 실거래","tracking","서버 반영 이력"),
-            Map.of("id","property","label","매물 수집","tracking","서버 반영 이력"),
-            Map.of("id","lh","label","LH 공고","tracking","기존 크롤러 실행 이력"),
-            Map.of("id","finance","label","금융 정책","tracking","검토 후보 수신 이력"));
+            Map.of("id","market","label","아파트 실거래","tracking","PC 실행 이력 + 배치별 서버 반영 이력"),
+            Map.of("id","property","label","매물 수집","tracking","PC 실행 이력 + 배치별 서버 반영 이력"),
+            Map.of("id","lh","label","LH 공고","tracking","PC 실행 이력 + 기존 DB 반영 이력"),
+            Map.of("id","finance","label","금융 정책","tracking","PC 실행 이력 + 검토 후보 수신 이력"),
+            Map.of("id","lifestyle","label","생활 데이터","tracking","공식 CSV 정규화·DB 반영 실행 이력"));
     }
 
     public List<Map<String,Object>> list(String category, int page) {
         int offset = Math.max(0, Math.min(page, 1000)) * 20;
         String sql = switch(category) {
             case "market", "property" -> """
-                SELECT crawl_id AS id, source_name AS source, started_at AS startedAt,
-                       finished_at AS finishedAt, collected_count AS collected,
-                       inserted_count AS inserted, updated_count AS updated,
-                       error_count AS errors, message AS status
-                FROM property_crawl_history WHERE category=? ORDER BY started_at DESC,crawl_id DESC LIMIT 20 OFFSET ?
+                SELECT * FROM (
+                  SELECT CONCAT('import-',crawl_id) AS id, source_name AS source, started_at AS startedAt,
+                         finished_at AS finishedAt, collected_count AS collected,
+                         inserted_count AS inserted, updated_count AS updated,
+                         error_count AS errors, message AS status, 'import' AS recordType,
+                         NULL AS triggerType,NULL AS operation,NULL AS stage,NULL AS regionScope,
+                         NULL AS regionCount,NULL AS dealYmd,NULL AS failedRegions,NULL AS skipped,
+                         NULL AS reusedBatches,NULL AS lastSeenAt
+                  FROM property_crawl_history WHERE category=?
+                  UNION ALL
+                  SELECT run_id AS id,source_name AS source,started_at AS startedAt,finished_at AS finishedAt,
+                         collected_count AS collected,inserted_count AS inserted,updated_count AS updated,
+                         error_count AS errors,status,'execution' AS recordType,
+                         trigger_type AS triggerType,operation,stage,region_scope AS regionScope,
+                         region_count AS regionCount,deal_ymd AS dealYmd,failed_regions AS failedRegions,
+                         skipped_count AS skipped,reused_batches AS reusedBatches,last_seen_at AS lastSeenAt
+                  FROM crawler_execution_history WHERE category=?
+                ) history ORDER BY startedAt DESC,id DESC LIMIT 20 OFFSET ?
                 """;
             case "lh" -> """
-                SELECT crawl_id AS id,crawler_name AS source,started_at AS startedAt,
-                       finished_at AS finishedAt,notice_count AS noticeCount,rule_count AS ruleCount,
-                       status FROM crawl_history ORDER BY started_at DESC,crawl_id DESC LIMIT 20 OFFSET ?
+                SELECT * FROM (
+                  SELECT CONCAT('lh-',crawl_id) AS id,crawler_name AS source,started_at AS startedAt,
+                       finished_at AS finishedAt,notice_count AS collected,NULL AS errors,status,'import' AS recordType,
+                       NULL AS triggerType,NULL AS operation,NULL AS stage,NULL AS lastSeenAt,
+                       notice_count AS noticeCount,rule_count AS ruleCount,NULL AS baselined,NULL AS unchanged,
+                       NULL AS detected,NULL AS missingPolicies FROM crawl_history
+                  UNION ALL
+                  SELECT run_id AS id,source_name AS source,started_at AS startedAt,finished_at AS finishedAt,
+                         collected_count AS collected,error_count AS errors,status,'execution' AS recordType,
+                         trigger_type AS triggerType,operation,stage,last_seen_at AS lastSeenAt,
+                         NULL AS noticeCount,NULL AS ruleCount,NULL AS baselined,NULL AS unchanged,
+                         NULL AS detected,NULL AS missingPolicies
+                  FROM crawler_execution_history WHERE category=?
+                ) history ORDER BY startedAt DESC,id DESC LIMIT 20 OFFSET ?
                 """;
             case "finance" -> """
-                SELECT id,'금융 정책 수신' AS source,started_at AS startedAt,finished_at AS finishedAt,
-                       received_count AS collected,baseline_count AS baselined,
-                       unchanged_count AS unchanged,detected_count AS detected,missing_count AS missingPolicies,
-                       status FROM finance_import_history ORDER BY started_at DESC,id DESC LIMIT 20 OFFSET ?
+                SELECT * FROM (
+                  SELECT CONCAT('finance-',id) AS id,'금융 정책 수신' AS source,started_at AS startedAt,
+                       finished_at AS finishedAt,received_count AS collected,NULL AS errors,status,'import' AS recordType,
+                       NULL AS triggerType,NULL AS operation,NULL AS stage,NULL AS lastSeenAt,
+                       NULL AS noticeCount,NULL AS ruleCount,baseline_count AS baselined,unchanged_count AS unchanged,
+                       detected_count AS detected,missing_count AS missingPolicies FROM finance_import_history
+                  UNION ALL
+                  SELECT run_id AS id,source_name AS source,started_at AS startedAt,finished_at AS finishedAt,
+                         collected_count AS collected,error_count AS errors,status,'execution' AS recordType,
+                         trigger_type AS triggerType,operation,stage,last_seen_at AS lastSeenAt,
+                         NULL AS noticeCount,NULL AS ruleCount,NULL AS baselined,NULL AS unchanged,
+                         NULL AS detected,NULL AS missingPolicies
+                  FROM crawler_execution_history WHERE category=?
+                ) history ORDER BY startedAt DESC,id DESC LIMIT 20 OFFSET ?
+                """;
+            case "lifestyle" -> """
+                SELECT * FROM (
+                  SELECT run_id AS id,source_name AS source,started_at AS startedAt,finished_at AS finishedAt,
+                         collected_count AS collected,error_count AS errors,status,'execution' AS recordType,
+                         trigger_type AS triggerType,operation,stage,last_seen_at AS lastSeenAt,
+                         NULL AS noticeCount,NULL AS ruleCount,NULL AS baselined,NULL AS unchanged,
+                         NULL AS detected,NULL AS missingPolicies
+                  FROM crawler_execution_history WHERE category=?
+                ) history ORDER BY startedAt DESC,id DESC LIMIT 20 OFFSET ?
                 """;
             default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"수집 항목을 확인해 주세요.");
         };
         Object[] params = category.equals("market") || category.equals("property")
-            ? new Object[]{category,offset} : new Object[]{offset};
+            ? new Object[]{category,category,offset} : new Object[]{category,offset};
         return jdbc.query(sql, (rs, i) -> {
             Map<String,Object> row = new LinkedHashMap<>();
             var metadata = rs.getMetaData();
@@ -59,15 +104,21 @@ public class CollectionHistoryService {
             String status=String.valueOf(row.get("status"));
             // Never expose raw crawler exception text, which can contain request URLs or keys.
             String normalized=normalizeStatus(status,row.get("finishedAt"));
-            if(row.get("collected") instanceof Number collected && row.get("errors") instanceof Number errors
+            if(!"execution".equals(row.get("recordType")) && row.get("collected") instanceof Number collected && row.get("errors") instanceof Number errors
                     && collected.intValue()>0 && errors.intValue()>=collected.intValue()) normalized="failed";
             row.put("status", normalized);
+            if("execution".equals(row.get("recordType"))) {
+                for(String key:List.of("startedAt","finishedAt","lastSeenAt")) {
+                    if(row.get(key)!=null) row.put(key,row.get(key).toString()+"Z");
+                }
+            }
             return row;
         },params);
     }
 
     public static String normalizeStatus(String status,Object finishedAt) {
         String value=status.toUpperCase(java.util.Locale.ROOT);
+        if(value.equals("CANCELLED")) return "cancelled";
         if(value.contains("PARTIAL")) return "partial";
         if(value.contains("FAIL") || value.contains("ERROR")) return "failed";
         if(value.equals("SUCCESS") || value.equals("COMPLETED") || value.equals("DONE")) return "completed";

@@ -134,8 +134,11 @@
       flyTo: function (center, zoom) { nativeMap.morph(latLng(center), Math.round(zoom), { duration: 500 }); return wrapper; },
       getBounds: function () {
         const bounds = nativeMap.getBounds();
+        const sw = bounds.getSW();
+        const ne = bounds.getNE();
         return {
           native: bounds,
+          minLat: sw.lat(), maxLat: ne.lat(), minLng: sw.lng(), maxLng: ne.lng(),
           contains: function (point) { return bounds.hasLatLng(latLng(point)); }
         };
       },

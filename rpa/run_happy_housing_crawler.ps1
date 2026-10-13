@@ -1,5 +1,7 @@
-param(
-    [int]$LockMinutes = 180
+﻿param(
+    [int]$LockMinutes = 180,
+    [ValidateSet("manual", "scheduled", "unknown")]
+    [string]$Trigger = "manual"
 )
 
 $ErrorActionPreference = "Stop"
@@ -52,12 +54,14 @@ try {
     # 이를 PowerShell의 중단 오류로 승격하지 않고 크롤러의 실제 종료 코드로 성공 여부를 판단합니다.
     $PreviousErrorActionPreference = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
-    & $Python $Crawler 2>&1 | ForEach-Object { "$_" } | Tee-Object -FilePath $LogFile -Append
+    & $Python $Crawler --trigger $Trigger 2>&1 | ForEach-Object { "$_" } | Tee-Object -FilePath $LogFile -Append
     $ExitCode = $LASTEXITCODE
     $ErrorActionPreference = $PreviousErrorActionPreference
 
     if ($ExitCode -eq 0) {
         "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] SUCCESS exit=$ExitCode" | Tee-Object -FilePath $LogFile -Append
+    } elseif ($ExitCode -eq 3) {
+        "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] PARTIAL exit=$ExitCode" | Tee-Object -FilePath $LogFile -Append
     } else {
         "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] FAILED exit=$ExitCode" | Tee-Object -FilePath $LogFile -Append
     }

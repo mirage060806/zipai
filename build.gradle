@@ -1,76 +1,90 @@
 plugins {
-    id 'java'
-    id 'org.springframework.boot' version '3.5.4'
-    id 'io.spring.dependency-management' version '1.1.7'
+	id 'java'
+	id 'org.springframework.boot' version '4.1.1'
+	id 'io.spring.dependency-management' version '1.1.7'
 }
 
-group = 'com.zipai'
-version = '1.0.0'
+group = 'com.onrender'
+version = '0.0.1-SNAPSHOT'
 
 java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
-
-springBoot {
-    mainClass = 'com.zipai.ZipAiApplication'
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
 }
 
 repositories {
-    mavenCentral()
+	mavenCentral()
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
-    implementation 'org.springframework.boot:spring-boot-starter-security'
-    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
-    implementation 'org.flywaydb:flyway-core'
-    implementation 'org.flywaydb:flyway-mysql'
-    implementation 'org.bouncycastle:bcprov-jdk18on:1.81'
-    runtimeOnly 'com.mysql:mysql-connector-j'
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.security:spring-security-test'
-    testCompileOnly 'org.projectlombok:lombok'
-    testAnnotationProcessor 'org.projectlombok:lombok'
-    testRuntimeOnly 'com.h2database:h2'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
+	implementation 'org.springframework.boot:spring-boot-starter-flyway'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
+	compileOnly 'org.projectlombok:lombok'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	runtimeOnly 'com.mysql:mysql-connector-j'
+	runtimeOnly 'org.flywaydb:flyway-mysql'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-data-jdbc-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-thymeleaf-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+	testCompileOnly 'org.projectlombok:lombok'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
 tasks.named('test') {
-    useJUnitPlatform()
+	useJUnitPlatform()
 }
 
-tasks.named('processResources') {
-    from('index.html') { into 'static' }
-    from('sub3.html') { into 'static' }
-    from('static') { into 'static/static' }
-    from('templates') { into 'static/templates' }
-    from('templates') { into 'templates' }
-}
-
-tasks.register('resetAdminPassword', JavaExec) {
-    group = 'administration'
-    description = 'Reset an application administrator password using DB_* environment variables.'
+// ZipAI Safety public-data import tasks (JDBC only; no JPA/Hibernate)
+tasks.register('importSafetyFacilities', JavaExec) {
+    group = 'safety'
     classpath = sourceSets.main.runtimeClasspath
-    mainClass = 'com.zipai.tools.ResetAdminPassword'
+    mainClass = 'com.onrender.zipai.safety.tools.ImportSafetyFacilities'
 }
 
-tasks.register('listAdminAccounts', JavaExec) {
-    group = 'administration'
-    description = 'List application administrator accounts without modifying the database.'
+tasks.register('geocodePoliceFacilities', JavaExec) {
+    group = 'safety'
     classpath = sourceSets.main.runtimeClasspath
-    mainClass = 'com.zipai.tools.ListAdminAccounts'
+    mainClass = 'com.onrender.zipai.safety.tools.GeocodePoliceFacilities'
+    if (project.hasProperty('geocodeLimit')) {
+        args "--limit=${project.property('geocodeLimit')}"
+    }
+    if (project.hasProperty('geocodeDelayMs')) {
+        args "--delay-ms=${project.property('geocodeDelayMs')}"
+    }
+    if (project.hasProperty('geocodeRetryFailed') && project.property('geocodeRetryFailed').toBoolean()) {
+        args '--retry-failed'
+    }
 }
 
-tasks.register('createAdminAccount', JavaExec) {
-    group = 'administration'
-    description = 'Create a new active application administrator account.'
+tasks.register('importRegionalSafetyIndex', JavaExec) {
+    group = 'safety'
     classpath = sourceSets.main.runtimeClasspath
-    mainClass = 'com.zipai.tools.CreateAdminAccount'
+    mainClass = 'com.onrender.zipai.safety.tools.ImportRegionalSafetyIndex'
+}
+
+tasks.register('importSeoulSafetyData', JavaExec) {
+    group = 'safety'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.onrender.zipai.safety.tools.ImportSeoulSafetyData'
+}
+
+tasks.register('importGyeonggiCrimeStatistics', JavaExec) {
+    group = 'safety'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.onrender.zipai.safety.tools.ImportGyeonggiCrimeStatistics'
+}
+
+tasks.register('importGyeonggiWomenSafetyData', JavaExec) {
+    group = 'safety'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.onrender.zipai.safety.tools.ImportGyeonggiWomenSafetyData'
 }

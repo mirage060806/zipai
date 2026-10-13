@@ -1,0 +1,5 @@
+.mobile-presentation-link { display: none; }
+@media (max-width: 920px) {
+  .mobile-presentation-link { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; margin-left: auto; padding: 8px 10px; border: 1px solid #d5e6ff; border-radius: 9px; color: #1769c2; background: #eef5ff; font-size: 12px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+  .mobile-presentation-link:focus-visible { outline: 2px solid #1769c2; outline-offset: 3px; }
+}

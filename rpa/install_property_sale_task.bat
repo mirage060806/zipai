@@ -16,7 +16,7 @@ echo Task  : %TASK_NAME%
 echo Time  : %RUN_TIME%
 echo Runner: %RUNNER%
 
-schtasks /Create /TN "%TASK_NAME%" /TR "\"%RUNNER%\"" /SC DAILY /ST %RUN_TIME% /F
+schtasks /Create /TN "%TASK_NAME%" /TR "\"%RUNNER%\" scheduled" /SC DAILY /ST %RUN_TIME% /F
 if errorlevel 1 (
   echo [ERROR] Failed to create scheduled task.
   echo Right-click this BAT and select "Run as administrator", then try again.

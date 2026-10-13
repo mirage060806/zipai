@@ -15,6 +15,10 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 import requests
+from rpa_runtime import load_env, start_run, execute
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin, urlsplit
+ACTIVE_HISTORY = None
 
 ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = ROOT.parent
@@ -23,20 +27,7 @@ DEFAULT_OUTPUT = ROOT / "data" / "processed" / "finance_policy_snapshots.json"
 
 
 def load_dotenv():
-    path = PROJECT_ROOT / ".env"
-    if not path.is_file():
-        return
-    for raw_line in path.read_text(encoding="utf-8-sig").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip()
-        if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
-            value = value[1:-1]
-        if key:
-            os.environ.setdefault(key, value)
+    load_env()
 
 
 class TextExtractor(HTMLParser):
@@ -65,19 +56,53 @@ def page_text(payload, charset):
 
 
 def fetch(source, timeout):
+    source_url = source["sourceUrl"].strip()
     response = requests.get(
-        source["sourceUrl"],
+        source_url,
         timeout=timeout,
         headers={"User-Agent": "ZipAI-Study/1.0 (official-policy-change-checker)"},
     )
     response.raise_for_status()
+    if source.get("resolveDetail", urlsplit(source_url).path in ("", "/")):
+        soup = BeautifulSoup(response.content, "html.parser")
+        keyword = re.sub(r"\s+", "", source["keyword"])
+        links = set()
+        for link in soup.select("a[href]"):
+            if keyword not in re.sub(r"\s+", "", link.get_text(" ", strip=True)):
+                continue
+            target = urljoin(response.url, link["href"].strip())
+            parsed = urlsplit(target)
+            if parsed.scheme == "https" and parsed.netloc == urlsplit(response.url).netloc and parsed.path not in ("", "/"):
+                links.add(target.split("#", 1)[0])
+        if len(links) != 1:
+            raise RuntimeError("정책 상세 링크가 없거나 여러 개입니다. finance_policy_sources.json에 상세 URL을 지정하세요.")
+        response = requests.get(links.pop(), timeout=timeout, headers={"User-Agent":"ZipAI-Study/1.0"})
+        response.raise_for_status()
     content_type = response.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
     if content_type not in {"text/html", "application/xhtml+xml", ""}:
         raise RuntimeError(f"지원하지 않는 응답 형식: {content_type}")
     charset = response.encoding
     if not charset or charset.lower() == "iso-8859-1":
         charset = response.apparent_encoding or "utf-8"
-    text = page_text(response.content, charset)
+    soup = BeautifulSoup(response.content.decode(charset, errors="replace"), "html.parser")
+    for node in soup.select("script, style, noscript, header, footer, nav"):
+        node.decompose()
+    selector = source.get("contentSelector")
+    content = soup.select_one(selector or "main, article, #content, #contents")
+    if selector and content is None:
+        raise RuntimeError("정책 본문 영역을 찾지 못했습니다. 본문 구조를 확인하세요.")
+    title_selector = source.get("titleSelector")
+    title = soup.select_one(title_selector) if title_selector else None
+    if title_selector and title is None:
+        raise RuntimeError("정책 제목 영역을 찾지 못했습니다. 본문 구조를 확인하세요.")
+    body_text = page_text(str(content if content is not None else soup).encode("utf-8"), "utf-8")
+    title_text = title.get_text(" ", strip=True) if title is not None else ""
+    text = re.sub(r"\s+", " ", (title_text + " " + body_text)).strip()
+    if source.get("requiredBodyKeywords"):
+        compact_body = re.sub(r"\s+", "", body_text)
+        if not all(re.sub(r"\s+", "", word) in compact_body for word in source["requiredBodyKeywords"]):
+            raise RuntimeError("정책 본문에 필수 설명 항목이 없습니다. 차단/오류 페이지 또는 본문 변경을 확인하세요.")
+
     keyword = re.sub(r"\s+", "", source["keyword"])
     compact = re.sub(r"\s+", "", text)
     compact_index = compact.find(keyword)
@@ -95,11 +120,11 @@ def fetch(source, timeout):
     start = max(0, original_index - 1800)
     end = min(len(text), original_index + len(source["keyword"]) + 3600)
     excerpt = text[start:end].strip()
-    normalized = re.sub(r"\s+", " ", excerpt)
+    normalized = re.sub(r"\s+", " ", text if selector else excerpt)
     return {
         "policyName": source["policyName"],
         "sourceName": source["sourceName"],
-        "sourceUrl": source["sourceUrl"],
+        "sourceUrl": response.url,
         "sourceHash": hashlib.sha256(normalized.encode("utf-8")).hexdigest(),
         "snapshotExcerpt": normalized[:6000],
         "checkedAt": datetime.now(timezone.utc).isoformat(),
@@ -121,19 +146,14 @@ def upload(base_url, token, snapshots, timeout):
         return response.status, json.loads(response.read().decode("utf-8"))
 
 
-def main():
+def _main(args):
     load_dotenv()
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--sources", default=str(DEFAULT_SOURCES))
-    parser.add_argument("--output", default=str(DEFAULT_OUTPUT))
-    parser.add_argument("--no-upload", action="store_true")
-    parser.add_argument("--check", action="store_true")
-    args = parser.parse_args()
-
     base_url = os.getenv("ZIPAI_BASE_URL", "http://localhost:8080")
     token = os.getenv("FINANCE_IMPORT_TOKEN", "")
     timeout = float(os.getenv("FINANCE_CRAWL_TIMEOUT_SECONDS", "20"))
-    sources = json.loads(Path(args.sources).read_text(encoding="utf-8"))
+    sources = json.loads(Path(args.sources).read_text(encoding="utf-8-sig"))
+    if not isinstance(sources, list) or not sources or any(not all(s.get(k) for k in ("policyName", "sourceName", "sourceUrl", "keyword")) for s in sources):
+        raise ValueError("금융 출처의 필수 항목을 확인하세요.")
     print(f"backend={base_url}")
     print(f"sources={len(sources)}")
     print(f"finance_import_token={'SET' if token else 'MISSING'}")
@@ -142,7 +162,10 @@ def main():
             print("필수 환경변수 누락: FINANCE_IMPORT_TOKEN", file=sys.stderr)
             return 2
         try:
-            status, result = upload(base_url, token, [], timeout)
+            request = urllib.request.Request(base_url.rstrip('/') + '/api/collection-runs/check?category=finance',
+                                             headers={'X-Finance-Import-Token':token})
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                status, result = response.status, json.loads(response.read().decode('utf-8'))
         except urllib.error.HTTPError as error:
             print(f"import_token_status={error.code}", file=sys.stderr)
             return 1
@@ -153,6 +176,8 @@ def main():
         print("check_result=" + json.dumps(result, ensure_ascii=False))
         return 0
 
+    if ACTIVE_HISTORY:
+        ACTIVE_HISTORY.emit(stage="collect")
     snapshots = []
     failures = []
     for index, source in enumerate(sources, 1):
@@ -164,6 +189,9 @@ def main():
             failures.append({"policyName": source.get("policyName"), "error": str(error)})
             print(f"source={index}/{len(sources)} policy={source.get('policyName')} result=FAILED error={error}")
 
+    if ACTIVE_HISTORY:
+        ACTIVE_HISTORY.partial = bool(failures)
+        ACTIVE_HISTORY.emit(collected=len(snapshots), errors=len(failures))
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps({"items": snapshots, "failures": failures}, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -173,10 +201,12 @@ def main():
         return 1
     if args.no_upload:
         print(f"run_summary collected={len(snapshots)} failed={len(failures)} action=save_only")
-        return 0
+        return 3 if failures else 0
     if not token:
         print("필수 환경변수 누락: FINANCE_IMPORT_TOKEN", file=sys.stderr)
         return 2
+    if ACTIVE_HISTORY:
+        ACTIVE_HISTORY.emit(stage="upload")
     try:
         status, result = upload(base_url, token, snapshots, timeout)
     except urllib.error.HTTPError as error:
@@ -187,9 +217,27 @@ def main():
         return 1
     print(f"upload_status={status}")
     print("import_result=" + json.dumps(result, ensure_ascii=False))
-    print(f"run_summary collected={len(snapshots)} failed={len(failures)} result=SUCCESS")
-    return 0
+    print(f"run_summary collected={len(snapshots)} failed={len(failures)} result={'PARTIAL' if failures else 'SUCCESS'}")
+    return 3 if failures else 0
 
+
+def main():
+    global ACTIVE_HISTORY
+    load_env()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--sources', default=str(DEFAULT_SOURCES))
+    parser.add_argument('--output', default=str(DEFAULT_OUTPUT))
+    parser.add_argument('--no-upload', action='store_true')
+    parser.add_argument('--check', action='store_true', help='서버 연결과 토큰을 확인합니다. 수집·반영 이력을 생성하지 않습니다.')
+    parser.add_argument('--trigger', choices=['manual','scheduled','unknown'], default='unknown')
+    args = parser.parse_args()
+    if args.check:
+        return _main(args)
+    ACTIVE_HISTORY = start_run('finance', args.trigger)
+    try:
+        return execute(ACTIVE_HISTORY, lambda: _main(args))
+    finally:
+        ACTIVE_HISTORY = None
 
 if __name__ == "__main__":
     raise SystemExit(main())

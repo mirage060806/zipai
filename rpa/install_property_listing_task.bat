@@ -17,7 +17,7 @@ echo Runner: %RUNNER%
 
 powershell.exe -NoProfile -ExecutionPolicy Bypass -Command ^
   "$ErrorActionPreference='Stop';" ^
-  "$action=New-ScheduledTaskAction -Execute '%RUNNER%';" ^
+  "$action=New-ScheduledTaskAction -Execute '%RUNNER%' -Argument 'scheduled';" ^
   "$triggers=@((New-ScheduledTaskTrigger -Daily -At 11:00);(New-ScheduledTaskTrigger -Daily -At 15:00));" ^
   "$user=[System.Security.Principal.WindowsIdentity]::GetCurrent().Name;" ^
   "$principal=New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -RunLevel Limited;" ^

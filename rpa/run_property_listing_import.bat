@@ -4,6 +4,8 @@ chcp 65001 >nul
 set "PYTHONUTF8=1"
 set "PYTHONIOENCODING=utf-8"
 cd /d "%~dp0"
+set "TRIGGER=manual"
+if /i "%~1"=="scheduled" set "TRIGGER=scheduled"
 
 if exist "..\.venv\Scripts\python.exe" (
   set "PYTHON=..\.venv\Scripts\python.exe"
@@ -29,7 +31,7 @@ if errorlevel 1 (
 
 echo.>>"!LOG_FILE!"
 echo [%date% %time%] START scheduled property listing import>>"!LOG_FILE!"
-"!PYTHON!" property_listing_batch.py >>"!LOG_FILE!" 2>&1
+"!PYTHON!" property_listing_batch.py --trigger "!TRIGGER!" >>"!LOG_FILE!" 2>&1
 set "EXITCODE=!ERRORLEVEL!"
 if "!EXITCODE!"=="0" (
   set "RESULT=OK listing import completed"

@@ -1,6 +1,8 @@
 """Process authorized property-listing CSV/JSON files from the incoming folder."""
 from __future__ import annotations
 
+from rpa_runtime import start_run, execute, load_env
+ACTIVE_HISTORY = None
 import argparse
 import os
 import shutil
@@ -64,14 +66,8 @@ def unique_destination(directory: Path, source: Path) -> Path:
     return candidate
 
 
-def main() -> int:
+def _main(args) -> int:
     load_project_env()
-    parser = argparse.ArgumentParser(description="ZipAI 현재 매물 CSV/JSON 예약 Import")
-    parser.add_argument("--incoming", type=Path, default=DEFAULT_INCOMING)
-    parser.add_argument("--archive", type=Path, default=DEFAULT_ARCHIVE)
-    parser.add_argument("--errors", type=Path, default=DEFAULT_ERRORS)
-    args = parser.parse_args()
-
     source_name = os.getenv("PROPERTY_LISTING_SOURCE_NAME", "AUTHORIZED_BROKER_CSV").strip()
     complete_snapshot = env_bool("PROPERTY_LISTING_COMPLETE_SNAPSHOT", False)
     study_data = env_bool("PROPERTY_LISTING_STUDY_DATA", False)
@@ -100,11 +96,17 @@ def main() -> int:
         print("result=NO_FILES")
         return 0
 
+    if complete_snapshot and len(files) != 1:
+        print("전체 목록 반영은 파일 1개만 허용합니다. 같은 공급처 자료를 한 파일로 합쳐 주세요.", file=sys.stderr)
+        return 2
+
     preflight = run([sys.executable, str(IMPORTER), "--check"])
     if preflight.returncode != 0:
         print("result=ERROR preflight_failed", file=sys.stderr)
         return preflight.returncode
 
+    if ACTIVE_HISTORY:
+        ACTIVE_HISTORY.emit(stage="upload")
     completed = failed = 0
     archive_day = archive / time.strftime("%Y%m%d")
     archive_day.mkdir(parents=True, exist_ok=True)
@@ -120,10 +122,14 @@ def main() -> int:
             destination = unique_destination(archive_day, path)
             shutil.move(str(path), str(destination))
             completed += 1
+            if ACTIVE_HISTORY:
+                ACTIVE_HISTORY.progress(collected=completed, errors=failed)
             print(f"file_archived={destination}")
             continue
 
         failed += 1
+        if ACTIVE_HISTORY:
+            ACTIVE_HISTORY.progress(collected=completed, errors=failed)
         report = errors / f"{path.stem}_{time.strftime('%Y%m%d_%H%M%S')}.error.txt"
         report.write_text(
             f"file={path}\nsource_name={source_name}\nexit_code={result.returncode}\n\n{result.stdout or ''}",
@@ -133,8 +139,25 @@ def main() -> int:
         print(f"error_report={report}", file=sys.stderr)
 
     print(f"batch_result completed={completed} failed={failed} total={len(files)}")
-    return 0 if failed == 0 else 3
+    if ACTIVE_HISTORY:
+        ACTIVE_HISTORY.emit(collected=completed, errors=failed)
+    return 0 if failed == 0 else 3 if completed else 1
 
+
+def main():
+    global ACTIVE_HISTORY
+    load_env()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--incoming', type=Path, default=DEFAULT_INCOMING)
+    parser.add_argument('--archive', type=Path, default=DEFAULT_ARCHIVE)
+    parser.add_argument('--errors', type=Path, default=DEFAULT_ERRORS)
+    parser.add_argument('--trigger', choices=['manual','scheduled','unknown'], default='unknown')
+    args = parser.parse_args()
+    ACTIVE_HISTORY = start_run('property', args.trigger, 'listing_import')
+    try:
+        return execute(ACTIVE_HISTORY, lambda: _main(args))
+    finally:
+        ACTIVE_HISTORY = None
 
 if __name__ == "__main__":
     try:

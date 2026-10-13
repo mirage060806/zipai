@@ -30,8 +30,22 @@
     if (!response.ok) throw new Error(payload.message || '게시판 요청을 처리하지 못했습니다.');
     return payload;
   }
+  async function uploadImage(file) {
+    if (!file || !file.size) return '';
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch('/api/community/posts/upload', { method: 'POST', credentials: 'same-origin', body: formData });
+    const payload = await response.json().catch(function () { return {}; });
+    if (!response.ok) throw new Error(payload.message || '이미지를 업로드하지 못했습니다.');
+    return payload.url || '';
+  }
   function label(value) {
     return ({ review: '주거 후기', tip: '생활 정보', question: '질문', free: '자유게시판' })[value] || '게시글';
+  }
+  function formatDate(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '날짜 정보 없음';
+    return new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
   }
   function showToast(message) {
     toast.textContent = message;
@@ -52,9 +66,10 @@
     document.getElementById('postCount').textContent = filtered.length;
     list.innerHTML = filtered.length ? filtered.map(function (post) {
       const rating = post.category === 'review' ? '<span class="post-rating">' + '★'.repeat(Number(post.rating || 0)) + '☆'.repeat(5 - Number(post.rating || 0)) + '</span>' : '';
-      const date = new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(post.createdAt));
+      const date = formatDate(post.createdAt);
+      const image = post.imageUrl ? '<img class="community-post-thumb" src="' + escapeHtml(post.imageUrl) + '" alt="">' : '';
       return '<article class="community-post" data-post-id="' + post.id + '" data-source="' + (post.source || 'server') + '" role="link" tabindex="0">' +
-        '<span class="post-category ' + post.category + '">' + label(post.category) + '</span><div class="post-main"><h3>' +
+        '<span class="post-category ' + escapeHtml(post.category) + '">' + label(post.category) + '</span><div class="post-main">' + image + '<h3>' +
         escapeHtml(post.title) + '</h3><p>' + escapeHtml(post.content) + '</p><div class="post-meta"><span>' +
         escapeHtml(post.author) + '</span><span>' + date + '</span>' + rating + (post.area ? '<span>' + escapeHtml(post.area) + '</span>' : '') +
         '</div></div><div class="post-stats"><button type="button" data-like="' + post.id + '"><i class="' +
@@ -75,9 +90,10 @@
     if (!form.checkValidity()) return form.reportValidity();
     const data = new FormData(form);
     try {
+      const imageUrl = await uploadImage(data.get('image'));
       const payload = await api('/api/community/posts', { method: 'POST', body: JSON.stringify({
         category: data.get('category'), title: data.get('title'), content: data.get('content'),
-        area: data.get('area'), rating: Number(data.get('rating') || 0)
+        area: data.get('area'), rating: Number(data.get('rating') || 0), imageUrl: imageUrl
       }) });
       posts.unshift({ ...payload.item, source: 'server' });
       form.reset(); updateReviewFields(); setWriteOpen(false); render();
@@ -98,7 +114,7 @@
     if (!article) return;
     const button = event.target.closest('[data-like]');
     if (!button) {
-      window.location.href = 'community-detail.html?id=' + encodeURIComponent(article.dataset.postId) + '&source=' + article.dataset.source;
+      window.location.href = '/board/community-detail?id=' + encodeURIComponent(article.dataset.postId) + '&source=' + article.dataset.source;
       return;
     }
     if (article.dataset.source === 'sample') return showToast('예시 글은 상세 화면에서 확인해 주세요.');
@@ -114,7 +130,7 @@
     const article = event.target.closest('[data-post-id]');
     if (!article) return;
     event.preventDefault();
-    window.location.href = 'community-detail.html?id=' + encodeURIComponent(article.dataset.postId) + '&source=' + article.dataset.source;
+    window.location.href = '/board/community-detail?id=' + encodeURIComponent(article.dataset.postId) + '&source=' + article.dataset.source;
   });
 
   updateReviewFields();

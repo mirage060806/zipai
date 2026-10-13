@@ -37,6 +37,7 @@ from urllib.parse import quote, unquote, urljoin
 
 import requests
 from bs4 import BeautifulSoup
+from collection_run import CollectionRun
 
 
 def configure_utf8_output() -> None:
@@ -154,6 +155,8 @@ CAPITAL_LAWD_CODES = {
     "41630": "경기 양주시", "41650": "경기 포천시", "41670": "경기 여주시", "41800": "경기 연천군",
     "41820": "경기 가평군", "41830": "경기 양평군",
 }
+
+ACTIVE_HISTORY = None
 
 SESSION = requests.Session()
 SESSION.headers.update({"User-Agent": USER_AGENT, "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.5"})
@@ -757,12 +760,16 @@ def crawl_molit(max_regions: int | None = None, resume: bool = False) -> tuple[l
             print(f"region_complete={region_name} accepted={region_rows}")
             completed_regions.add(lawd_cd)
             save_checkpoint(rows, stats, completed_regions, regions)
+            if ACTIVE_HISTORY:
+                ACTIVE_HISTORY.progress(stage='collect', collected=len(rows), skipped=stats.skipped, failedRegions=len(failed_regions))
         except Exception as exc:
             if region_rows:
                 rows = [row for row in rows if str(row.get("lawdCd", "")) != lawd_cd]
                 stats.accepted = max(0, stats.accepted - region_rows)
             failed_regions.append(f"{lawd_cd} {region_name}: {exc}")
             print(f"region_error={lawd_cd} name={region_name} error={exc}", file=sys.stderr)
+            if ACTIVE_HISTORY:
+                ACTIVE_HISTORY.progress(stage='collect', collected=len(rows), failedRegions=len(failed_regions))
 
     if failed_regions:
         stats.failed_regions = len(failed_regions)
@@ -771,13 +778,15 @@ def crawl_molit(max_regions: int | None = None, resume: bool = False) -> tuple[l
             print(f"- {failure}", file=sys.stderr)
     if not rows and failed_regions:
         raise RuntimeError("모든 MOLIT 지역 수집이 실패했습니다.")
+    if ACTIVE_HISTORY:
+        ACTIVE_HISTORY.emit(stage='geocode', collected=len(rows), skipped=stats.skipped, failedRegions=stats.failed_regions)
     enrich_market_coordinates(rows)
     save_checkpoint(rows, stats, completed_regions, regions)
     return rows, stats
 
 
 def save(items: list[dict[str, Any]], stats: CrawlStats, source_name: str) -> None:
-    payload = {"sourceName": source_name, "sourceMode": MODE, "crawledAt": datetime.now(timezone.utc).isoformat(), "stats": stats.__dict__, "items": items}
+    payload = {"sourceName": source_name, "sourceMode": MODE, "dealYmd": MOLIT_DEAL_YMD if MODE == "molit" else "", "crawledAt": datetime.now(timezone.utc).isoformat(), "stats": stats.__dict__, "items": items}
     write_json_atomic(OUT, payload)
 
 
@@ -821,6 +830,8 @@ def upload(items: list[dict[str, Any]], source_name: str, source_mode: str = MOD
     else:
         completed = set()
         totals = {"collected": 0, "inserted": 0, "updated": 0, "errors": 0}
+    if ACTIVE_HISTORY:
+        ACTIVE_HISTORY.emit(stage='upload', reusedBatches=len(completed))
     batches = (len(items) + IMPORT_BATCH_SIZE - 1) // IMPORT_BATCH_SIZE
     for index in range(batches):
         batch_number = index + 1
@@ -854,6 +865,11 @@ def upload(items: list[dict[str, Any]], source_name: str, source_mode: str = MOD
         if response is None:
             raise RuntimeError(f"업로드 배치 {batch_number}/{batches} 응답이 없습니다.")
         result = response.json()
+        if ACTIVE_HISTORY:
+            current = ACTIVE_HISTORY.payload
+            ACTIVE_HISTORY.progress(stage='upload', inserted=current['inserted'] + int(result.get('inserted', 0) or 0),
+                                    updated=current['updated'] + int(result.get('updated', 0) or 0),
+                                    errors=current['errors'] + int(result.get('errors', 0) or 0))
         for key in totals:
             totals[key] += int(result.get(key, 0) or 0)
         completed.add(batch_number)
@@ -886,6 +902,19 @@ def validate_html_config(require_token: bool) -> None:
         if not value: missing.append(name)
     if require_token and not TOKEN: missing.append("PROPERTY_IMPORT_TOKEN")
     if missing: raise SystemExit("필수 환경변수 누락: " + ", ".join(missing))
+
+
+def configure_saved_history(rows, source_mode):
+    codes = {str(row.get('lawdCd', '')) for row in rows if re.fullmatch(r'[0-9]{5}', str(row.get('lawdCd', '')))}
+    periods = {str(row.get('dealYmd', '')) for row in rows if re.fullmatch(r'[0-9]{6}', str(row.get('dealYmd', '')))}
+    saved = read_json(OUT)
+    period = str(saved.get('dealYmd') or (next(iter(periods)) if len(periods) == 1 else ''))
+    if not re.fullmatch(r'[0-9]{4}(0[1-9]|1[0-2])', period):
+        period = ''
+    ACTIVE_HISTORY.emit(category='market' if source_mode == 'molit' else 'property', collected=len(rows),
+                        regionScope='custom' if source_mode == 'molit' else 'none',
+                        regionCount=len(codes) if source_mode == 'molit' else 0,
+                        dealYmd=period if source_mode == 'molit' else '')
 
 
 def check_backend() -> None:
@@ -929,22 +958,63 @@ def main() -> int:
         action="store_true",
         help="재수집 없이 저장된 MOLIT JSON의 누락 좌표를 보완하고 변경 건만 DB로 업로드",
     )
+    parser.add_argument('--trigger', choices=('manual','scheduled','unknown'), default='manual', help='실행 방식')
+    parser.add_argument('--preflight', action='store_true', help='기존 사전 점검을 같은 실행 이력 안에서 수행')
+    parser.add_argument('--history-sync', action='store_true', help='수집 없이 미전송 이력만 다시 전송')
     args = parser.parse_args()
+    if args.history_sync:
+        tracker = CollectionRun(BASE_DIR, BACKEND, TOKEN, MODE, args.trigger, 'crawl')
+        tracker.flush()
+        pending = len(list(tracker.directory.glob('*.json')))
+        print(f'history_pending_files={pending}')
+        return 0 if pending == 0 else 2
+    if args.check:
+        check_backend()
+        return 0
+    global ACTIVE_HISTORY
+    operation = 'geocode_only' if args.geocode_only else 'upload_only' if args.upload_only else 'crawl'
+    ACTIVE_HISTORY = CollectionRun(BASE_DIR, BACKEND, TOKEN, MODE, args.trigger, operation)
+    ACTIVE_HISTORY.emit()
+    try:
+        result = perform_run(args)
+        status = 'partial' if ACTIVE_HISTORY.payload['failedRegions'] or ACTIVE_HISTORY.payload['errors'] or ACTIVE_HISTORY.partial else 'completed'
+        ACTIVE_HISTORY.finished(status)
+        return result
+    except KeyboardInterrupt:
+        ACTIVE_HISTORY.finished('cancelled')
+        raise
+    except BaseException:
+        ACTIVE_HISTORY.finished('failed')
+        raise
+    finally:
+        ACTIVE_HISTORY = None
+
+
+def perform_run(args) -> int:
     if MODE not in {"html", "molit"}:
         raise SystemExit("PROPERTY_SOURCE_MODE는 html 또는 molit 이어야 합니다.")
     if args.max_regions is not None and args.max_regions < 1:
         raise SystemExit("--max-regions 값은 1 이상이어야 합니다.")
-    if args.check:
+    if MODE == 'molit':
+        regions = resolve_molit_regions()
+        if args.max_regions is not None:
+            regions = regions[:args.max_regions]
+        ACTIVE_HISTORY.emit(regionScope=MOLIT_REGION_SCOPE if MOLIT_REGION_SCOPE in ('single','capital','custom') else 'other',
+                            regionCount=len(regions), dealYmd=MOLIT_DEAL_YMD)
+    if args.preflight:
         check_backend()
-        return 0
+    ACTIVE_HISTORY.emit(stage='collect')
     started_at = time.monotonic()
     if args.geocode_only:
         rows, source_name, saved_mode = load_saved_result()
+        configure_saved_history(rows, saved_mode)
         if saved_mode != "molit":
             raise RuntimeError("--geocode-only는 저장된 MOLIT 실거래가 자료에만 사용할 수 있습니다.")
         validate_import_token()
         payload = read_json(OUT)
+        ACTIVE_HISTORY.emit(stage='geocode')
         changed_rows, geocode_summary = geocode_saved_rows(payload, rows)
+        ACTIVE_HISTORY.emit(collected=len(changed_rows))
         if changed_rows:
             result = upload(changed_rows, source_name, saved_mode)
             print("import_result=" + json.dumps(result, ensure_ascii=False))
@@ -964,9 +1034,12 @@ def main() -> int:
         return 0
     if args.upload_only:
         rows, source_name, saved_mode = load_saved_result()
+        configure_saved_history(rows, saved_mode)
         result = upload(rows, source_name, saved_mode)
         print("import_result=" + json.dumps(result, ensure_ascii=False))
-        print(f"run_summary mode={saved_mode} action=upload_only rows={len(rows)} elapsed={time.monotonic() - started_at:.1f}s result=SUCCESS")
+        if not result.get('success'):
+            ACTIVE_HISTORY.partial = True
+        print(f"run_summary mode={saved_mode} action=upload_only rows={len(rows)} elapsed={time.monotonic() - started_at:.1f}s result={'SUCCESS' if result.get('success') else 'PARTIAL'}")
         return 0
     if args.upload:
         validate_import_token()
@@ -976,6 +1049,7 @@ def main() -> int:
     else:
         rows, stats = crawl_html()
         source_name = SOURCE_NAME
+    ACTIVE_HISTORY.emit(stage='collect', collected=len(rows), skipped=stats.skipped, failedRegions=stats.failed_regions)
     save(rows, stats, source_name)
     print(
         f"mode={MODE} pages={stats.pages} rows={stats.cards} "
@@ -986,9 +1060,12 @@ def main() -> int:
     if args.upload:
         result = upload(rows, source_name)
         print("import_result=" + json.dumps(result, ensure_ascii=False))
+        if not result.get('success'):
+            ACTIVE_HISTORY.partial = True
+    run_status = 'PARTIAL' if ACTIVE_HISTORY.payload['failedRegions'] or ACTIVE_HISTORY.payload['errors'] or ACTIVE_HISTORY.partial else 'SUCCESS'
     print(
         f"run_summary mode={MODE} regions_failed={stats.failed_regions} rows={len(rows)} "
-        f"elapsed={time.monotonic() - started_at:.1f}s result=SUCCESS"
+        f"elapsed={time.monotonic() - started_at:.1f}s result={run_status}"
     )
     return 0
 

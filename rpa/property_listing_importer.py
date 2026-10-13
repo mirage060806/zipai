@@ -217,6 +217,8 @@ def upload(source_name: str, rows: list[dict[str, Any]], batch_size: int, study_
         for key in totals:
             totals[key] += int(result.get(key, 0) or 0)
     totals["batches"] = batches
+    if complete_snapshot and totals["errors"]:
+        raise RuntimeError("일부 업로드 실패: 기존 매물 종료 처리를 건너뜁니다.")
     if complete_snapshot:
         response = SESSION.post(
             BACKEND + "/api/properties/crawl-import/finalize",
@@ -300,13 +302,16 @@ def main() -> int:
     if errors:
         for error in errors[:20]:
             print(error, file=sys.stderr)
+    if args.complete_snapshot and errors:
+        print("부분 입력/좌표 오류: 전체 목록 반영을 중단합니다. 기존 매물은 종료하지 않습니다.", file=sys.stderr)
+        return 2
     if args.upload:
         validate_backend()
         result = upload(source_name, rows, batch_size, args.study_data, args.complete_snapshot)
         print("import_result=" + json.dumps(result, ensure_ascii=False))
         if result["errors"]:
             return 2
-    return 0
+    return 3 if errors else 0
 
 
 if __name__ == "__main__":

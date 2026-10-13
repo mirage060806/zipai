@@ -1,29 +1,15 @@
 @echo off
 setlocal EnableExtensions
 chcp 65001 >nul
-cd /d "%~dp0\.."
-
-if exist ".env" (
-  for /f "usebackq tokens=1,* delims==" %%A in (".env") do (
-    if not "%%A"=="" if not "%%A:~0,1"=="#" set "%%A=%%B"
-  )
-)
-
-if not exist "rpa\logs" mkdir "rpa\logs"
-set "LOG_FILE=rpa\logs\finance_policy_update.log"
-echo.>>"%LOG_FILE%"
-echo [%date% %time%] START finance policy update>>"%LOG_FILE%"
-
-if exist ".venv\Scripts\python.exe" (
-  ".venv\Scripts\python.exe" "rpa\finance_policy_crawler.py" >>"%LOG_FILE%" 2>&1
-) else (
-  python "rpa\finance_policy_crawler.py" >>"%LOG_FILE%" 2>&1
-)
-set "EXIT_CODE=%ERRORLEVEL%"
-
-if "%EXIT_CODE%"=="0" (
-  echo [%date% %time%] OK finance policy update completed.>>"%LOG_FILE%"
-) else (
-  echo [%date% %time%] FAILED finance policy update. exit=%EXIT_CODE%>>"%LOG_FILE%"
-)
-exit /b %EXIT_CODE%
+set "PYTHONUTF8=1"
+set "PYTHONIOENCODING=utf-8"
+cd /d "%~dp0"
+set "TRIGGER=manual"
+if /i "%~1"=="scheduled" set "TRIGGER=scheduled"
+set "PYTHON=python"
+if exist "..\.venv\Scripts\python.exe" set "PYTHON=..\.venv\Scripts\python.exe"
+if not exist "logs" mkdir "logs"
+"%PYTHON%" finance_policy_crawler.py --trigger "%TRIGGER%" >>"logs\finance_policy.log" 2>&1
+set "EXITCODE=%ERRORLEVEL%"
+echo 금융 수집 종료: exit=%EXITCODE% 로그=rpa/logs/finance_policy.log
+exit /b %EXITCODE%
