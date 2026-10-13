@@ -6,6 +6,10 @@ spring:
     driver-class-name: org.h2.Driver
   flyway:
     enabled: false
+  sql:
+    init:
+      # schema.sql is an operational TiDB dump; Hibernate creates the test schema.
+      mode: never
   jpa:
     hibernate:
       ddl-auto: create-drop
