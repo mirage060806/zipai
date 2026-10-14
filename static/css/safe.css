@@ -24,7 +24,7 @@
   --color-muted: var(--zipai-muted);
 }
 
-/* NAVER Maps safety facility layer */
+/* Leaflet safety facility layer */
 .safety-map[data-safety-map] {
   position: relative;
   height: 580px;
@@ -231,6 +231,9 @@
 .safety-facility-card > span, .safety-facility-card small { font-size: 11px; }
 .safety-facility-type { color: var(--zipai-primary); font-weight: 800; }
 .safety-overlay-close { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border: 0; color: #64748b; background: transparent; font-size: 22px; line-height: 1; }
+.safety-map-popup .leaflet-popup-content-wrapper { padding: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.safety-map-popup .leaflet-popup-content { margin: 0; }
+.safety-map-popup .leaflet-popup-tip-container { display: none; }
 
 @media (max-width: 767.98px) {
   .safety-map[data-safety-map] { height: 470px; min-height: 470px; }
